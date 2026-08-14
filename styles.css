@@ -1,0 +1,686 @@
+:root {
+  color-scheme: dark;
+  --ink: #f4f4f1;
+  --muted: rgba(244, 244, 241, .58);
+  --line: rgba(244, 244, 241, .2);
+  --black: #080808;
+  --accent: #9eeaff;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+* { box-sizing: border-box; }
+/* Keep native wheel input synchronous so the page-state reading locks can
+   consume it before a queued smooth-scroll animation carries a cover past. */
+html { background: var(--black); overflow-anchor: none; scroll-behavior: auto; }
+body { margin: 0; background: var(--black); color: var(--ink); font-family: Manrope, Arial, sans-serif; overflow-anchor: none; overflow-x: hidden; }
+#site-background-particles { height: 100vh; inset: 0; pointer-events: none; position: fixed; width: 100vw; z-index: 0; }
+button, a { color: inherit; }
+button { font: inherit; }
+
+.site-header {
+  align-items: center;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(8,8,8,.78), rgba(8,8,8,0));
+  display: flex;
+  font: 400 10px/1 'DM Mono', monospace;
+  justify-content: space-between;
+  left: 0;
+  letter-spacing: .15em;
+  padding: 24px 32px;
+  position: fixed;
+  right: 0;
+  text-transform: uppercase;
+  top: 0;
+  z-index: 20;
+}
+.brand { text-decoration: none; transition: opacity .25s ease; }
+.brand:hover { opacity: .6; }
+.header-meta { align-items: center; display: flex; gap: 32px; }
+.header-meta span:last-child { color: var(--muted); }
+.menu-toggle { background: transparent; border: 0; cursor: pointer; letter-spacing: inherit; padding: 6px 0; text-transform: uppercase; }
+.menu-toggle::after { background: var(--ink); content: ''; display: block; height: 1px; margin-top: 5px; transform: scaleX(0); transform-origin: right; transition: transform .35s var(--ease); }
+.menu-toggle:hover::after, .menu-toggle[aria-expanded="true"]::after { transform: scaleX(1); transform-origin: left; }
+
+.page-menu { background: rgba(8,8,8,.94); inset: 0; opacity: 0; pointer-events: none; position: fixed; transform: translateY(-14px); transition: opacity .45s ease, transform .55s var(--ease); z-index: 15; }
+.page-menu.is-open { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.menu-inner { margin: 110px auto 0; max-width: 1020px; padding: 0 32px 80px; }
+.menu-kicker { color: var(--muted); font: 300 11px/1 'DM Mono', monospace; letter-spacing: .18em; margin-bottom: 34px; }
+#page-links { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 20px; }
+.page-link { align-items: baseline; border-bottom: 1px solid var(--line); display: flex; font: 400 13px/1.4 'DM Mono', monospace; gap: 14px; padding: 10px 0; text-decoration: none; transition: color .3s ease, border-color .3s ease, padding-left .3s var(--ease); }
+.page-link small { color: var(--muted); font-size: 10px; }
+.page-link:hover, .page-link.is-current { border-color: var(--ink); color: var(--accent); padding-left: 8px; }
+
+.page { aspect-ratio: 1724 / 609; background: var(--black); min-height: 1px; overflow: hidden; position: relative; }
+/* A chapter handoff intentionally changes only its own below-canvas reserve.
+   Browser scroll anchoring must not counter-scroll the document while that
+   reserve contracts, otherwise different covers hand off at different places. */
+#portfolio { overflow-anchor: none; position: relative; z-index: 1; }
+.page-inner { overflow: hidden; position: relative; transform: translate3d(0, 24px, 0); transition: transform 1.1s var(--ease); }
+.page.is-visible .page-inner { transform: translate3d(0, 0, 0); }
+.page[data-page="1"] { align-items: center; aspect-ratio: auto; background: transparent; display: flex; min-height: 100vh; }
+.page[data-page="1"] .page-inner { width: 100%; }
+.page[data-page="28"] { align-items: center; aspect-ratio: auto; background: transparent; display: flex; min-height: 100vh; }
+.page[data-page="28"] .page-inner { width: 100%; }
+.page[data-page="2"], .page[data-page="3"], .page[data-page="8"], .page[data-page="13"], .page[data-page="18"], .page[data-page="23"] { aspect-ratio: auto; min-height: 0; overflow: visible; }
+/* These sections retain an existing below-canvas reading reserve. Their Figma
+   canvases provide their own opaque backgrounds, so only the empty reserve is
+   transparent enough to reveal the site-level background field underneath. */
+.page[data-page="2"], .page[data-page="3"], .page[data-page="8"], .page[data-page="13"], .page[data-page="18"], .page[data-page="23"] { background: transparent; }
+/* The Figma canvas reaches the reading centre through normal document flow.
+   The invisible space is appended only below it, so native sticky can retain
+   the canvas at that same centre while its original layers finish revealing. */
+.page[data-page="2"] .page-inner, .page[data-page="3"] .page-inner, .page[data-page="8"] .page-inner, .page[data-page="13"] .page-inner, .page[data-page="18"] .page-inner, .page[data-page="23"] .page-inner { margin-top: calc(50vh - 17.6628vw); position: sticky; top: calc(50vh - 17.6628vw); width: 100%; }
+.page[data-page="2"]::after, .page[data-page="3"]::after, .page[data-page="8"]::after, .page[data-page="13"]::after, .page[data-page="18"]::after, .page[data-page="23"]::after { content: ''; display: block; height: 120vh; transition: height 1.5s cubic-bezier(.32, 0, .2, 1); }
+/* After the user deliberately releases a completed section, remove only its
+   sticky reserve so the following Figma page can follow directly. */
+.page[data-page="2"].chapter-handoff, .page[data-page="2"].chapter-complete, .page[data-page="3"].chapter-handoff, .page[data-page="3"].chapter-complete, .page[data-page="8"].chapter-handoff, .page[data-page="8"].chapter-complete, .page[data-page="13"].chapter-handoff, .page[data-page="13"].chapter-complete, .page[data-page="18"].chapter-handoff, .page[data-page="18"].chapter-complete, .page[data-page="23"].chapter-handoff, .page[data-page="23"].chapter-complete, .page[data-page="3"].chapter-returning, .page[data-page="8"].chapter-returning, .page[data-page="13"].chapter-returning, .page[data-page="18"].chapter-returning, .page[data-page="23"].chapter-returning { min-height: calc(50vh + 17.6628vw); }
+.page[data-page="2"].chapter-handoff::after, .page[data-page="2"].chapter-complete::after, .page[data-page="3"].chapter-handoff::after, .page[data-page="3"].chapter-complete::after, .page[data-page="8"].chapter-handoff::after, .page[data-page="8"].chapter-complete::after, .page[data-page="13"].chapter-handoff::after, .page[data-page="13"].chapter-complete::after, .page[data-page="18"].chapter-handoff::after, .page[data-page="18"].chapter-complete::after, .page[data-page="23"].chapter-handoff::after, .page[data-page="23"].chapter-complete::after { height: 0; }
+/* Let the cover's own empty lower reserve contract in normal flow. The body
+   never receives an upward transform, so it cannot pass over the Figma cover
+   before the cover interaction has completed. */
+.page[data-page="3"].chapter-handoff::after, .page[data-page="8"].chapter-handoff::after, .page[data-page="13"].chapter-handoff::after, .page[data-page="18"].chapter-handoff::after, .page[data-page="23"].chapter-handoff::after { transition-duration: .9s; transition-timing-function: cubic-bezier(.32, 0, .2, 1); }
+.page[data-page="3"].chapter-complete::after, .page[data-page="8"].chapter-complete::after, .page[data-page="13"].chapter-complete::after, .page[data-page="18"].chapter-complete::after, .page[data-page="23"].chapter-complete::after { transition: none; }
+.page[data-page="3"].chapter-returning::after, .page[data-page="8"].chapter-returning::after, .page[data-page="13"].chapter-returning::after, .page[data-page="18"].chapter-returning::after, .page[data-page="23"].chapter-returning::after { height: 120vh; transition-duration: 1.9s; transition-timing-function: cubic-bezier(.32, 0, .2, 1); }
+.page-image { display: block; height: auto; width: 100%; }
+.page[data-page="1"] .page-image, .page[data-page="28"] .page-image { will-change: transform; }
+.page-caption { display: none; }
+
+/* Page 02 — each visible item is a transparent rendering of its own Figma node. */
+.figma-directory-transparent { aspect-ratio: 1724 / 609; background: #000; overflow: hidden; position: relative; }
+.directory-transparent-bg, .directory-transparent-node { display: block; position: absolute; }
+.directory-transparent-bg { height: 100%; inset: 0; width: 100%; }
+.directory-transparent-node { height: calc(var(--h) / 609 * 100%); left: calc(var(--x) / 1724 * 100%); top: calc(var(--y) / 609 * 100%); width: calc(var(--w) / 1724 * 100%); }
+
+/* Page 02 final static layer tree: every entry is a Figma background/image/text
+   node or a verified transparent Figma module at its original bounds. */
+.figma-directory-2x { aspect-ratio: 1724 / 609; background: #000; container-type: inline-size; overflow: hidden; position: relative; }
+.directory-2x-background, .directory-2x-node { display: block; position: absolute; }
+.directory-2x-background { height: 100%; inset: 0; width: 100%; }
+.directory-2x-node { height: calc(var(--h) / 609 * 100%); left: calc(var(--x) / 1724 * 100%); object-fit: fill; top: calc(var(--y) / 609 * 100%); width: calc(var(--w) / 1724 * 100%); }
+.directory-2x-right { object-fit: contain; }
+.directory-2x-subtitles { object-fit: fill; }
+.directory-2x-research-base { clip-path: none; }
+.directory-publications-update { display: none; }      
+.directory-publications-corrected { display: none; }
+.directory-publications-author-patch { height: calc(18 / 609 * 100%); left: calc(241 / 1724 * 100%); overflow: hidden; position: absolute; top: calc(376 / 609 * 100%); width: calc(321 / 1724 * 100%); z-index: 6; }
+.directory-publications-author-patch img { height: calc(609 / 18 * 100%); left: calc(-241 / 321 * 100%); max-width: none; position: absolute; top: calc(-376 / 18 * 100%); width: calc(1724 / 321 * 100%); }
+.directory-publications-author-updated { height: calc(9 / 609 * 100%); left: calc(268.5 / 1724 * 100%); object-fit: fill; position: absolute; top: calc(381 / 609 * 100%); width: calc(206 / 1724 * 100%); z-index: 7; }
+.directory-publications-heading { font-size: calc(13 / 1724 * 100cqw); font-weight: 500; letter-spacing: 0; line-height: calc(35 / 1724 * 100cqw); white-space: nowrap; }
+.directory-publications-title, .directory-publications-author { font-size: calc(9 / 1724 * 100cqw); font-weight: 500; letter-spacing: calc(1 / 1724 * 100cqw); line-height: calc(14 / 1724 * 100cqw); position: absolute; white-space: nowrap; }
+.directory-publications-title { left: 0; top: calc(22 / 1724 * 100cqw); }
+.directory-publications-author { font-weight: 300; left: calc(7 / 1724 * 100cqw); top: calc(36 / 1724 * 100cqw); }
+.directory-publications-title-second { left: calc(17.5 / 1724 * 100cqw); top: calc(58 / 1724 * 100cqw); }
+.directory-publications-author-second { left: calc(24.5 / 1724 * 100cqw); top: calc(75 / 1724 * 100cqw); }
+.figma-directory-2x .directory-2x-left, .figma-directory-2x .directory-2x-right {
+  will-change: opacity, transform;
+}
+.figma-directory-2x.directory-scroll-pending .directory-2x-left {
+  opacity: 0;
+  transform: translate3d(-26px, 0, 0);
+  transition: opacity .72s ease-out, transform .96s cubic-bezier(.22, 1, .36, 1);
+}
+.figma-directory-2x.directory-scroll-pending .directory-2x-right {
+  opacity: 0;
+  transform: translate3d(0, 20px, 0);
+  transition: opacity .64s ease-out, transform .86s cubic-bezier(.22, 1, .36, 1);
+}
+.figma-directory-2x.directory-stage-1 .directory-2x-photo,
+.figma-directory-2x.directory-stage-2 .directory-2x-photo,
+.figma-directory-2x.directory-stage-2 .directory-2x-profile,
+.figma-directory-2x.directory-stage-3 .directory-2x-photo,
+.figma-directory-2x.directory-stage-3 .directory-2x-profile,
+.figma-directory-2x.directory-stage-3 .directory-2x-research,
+.figma-directory-2x.directory-stage-4 .directory-2x-photo,
+.figma-directory-2x.directory-stage-4 .directory-2x-profile,
+.figma-directory-2x.directory-stage-4 .directory-2x-research,
+.figma-directory-2x.directory-stage-4 .directory-2x-awards,
+.figma-directory-2x.directory-stage-5 .directory-2x-photo,
+.figma-directory-2x.directory-stage-5 .directory-2x-profile,
+.figma-directory-2x.directory-stage-5 .directory-2x-research,
+.figma-directory-2x.directory-stage-5 .directory-2x-awards,
+.figma-directory-2x.directory-stage-5 .directory-2x-student,
+.figma-directory-2x.directory-stage-6 .directory-2x-left,
+.figma-directory-2x.directory-stage-7 .directory-2x-left,
+.figma-directory-2x.directory-stage-8 .directory-2x-left,
+.figma-directory-2x.directory-stage-9 .directory-2x-left {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+.figma-directory-2x.directory-stage-2 .directory-2x-profile { transition-delay: .06s; }
+.figma-directory-2x.directory-stage-3 .directory-2x-research { transition-delay: .06s; }
+.figma-directory-2x.directory-stage-4 .directory-2x-awards { transition-delay: .06s; }
+.figma-directory-2x.directory-stage-5 .directory-2x-student { transition-delay: .06s; }
+.figma-directory-2x.directory-stage-6 .directory-2x-tools { transition-delay: .06s; }
+.figma-directory-2x.directory-stage-7 .directory-2x-right.directory-2x-content,
+.figma-directory-2x.directory-stage-8 .directory-2x-right.directory-2x-content,
+.figma-directory-2x.directory-stage-8 .directory-2x-right.directory-2x-numbers {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+.figma-directory-2x.directory-stage-8 .directory-2x-numbers { opacity: 1; transform: translate3d(0, 0, 0); }
+.figma-directory-2x.directory-stage-9 .directory-2x-right { opacity: 1; transform: translate3d(0, 0, 0); }
+.figma-directory-2x.directory-stage-9 .directory-2x-numbers { transition-delay: .04s; }
+.figma-directory-2x.directory-stage-9 .directory-2x-titles { transition-delay: .12s; }
+.figma-directory-2x.directory-stage-9 .directory-2x-subtitles { transition-delay: .2s; }
+.figma-directory-2x.directory-stage-9 .directory-2x-cards { transition-delay: .28s; }
+.figma-directory-2x.directory-stage-9 .directory-2x-categories { transition-delay: .36s; }
+
+/* Page 02: direct Figma node exports. The wrappers are timing containers only. */
+.figma-directory-native { aspect-ratio: 1724 / 609; background: #000; overflow: hidden; position: relative; }
+.native-background, .native-node { display: block; position: absolute; }
+.native-background { height: 100%; inset: 0; width: 100%; }
+.directory-module { inset: 0; pointer-events: none; position: absolute; }
+.native-node { height: calc(var(--h) / 609 * 100%); left: calc(var(--x) / 1724 * 100%); top: calc(var(--y) / 609 * 100%); width: calc(var(--w) / 1724 * 100%); }
+.figma-directory-native .directory-module { opacity: 0; transition: opacity .72s cubic-bezier(.22,1,.36,1), transform .92s cubic-bezier(.22,1,.36,1); will-change: opacity, transform; }
+.figma-directory-native .native-left-photo, .figma-directory-native .native-left-profile { transform: translate3d(-24px,0,0); }
+.figma-directory-native .native-left-research, .figma-directory-native .native-left-student { transform: translate3d(-20px,0,0); }
+.figma-directory-native .native-left-awards, .figma-directory-native .native-left-tools { transform: translate3d(-16px,0,0); }
+.figma-directory-native .native-right-content, .figma-directory-native .native-right-numbers, .figma-directory-native .native-right-titles, .figma-directory-native .native-right-subtitles, .figma-directory-native .native-right-cards, .figma-directory-native .native-right-categories { transform: translate3d(0,-18px,0); }
+.figma-directory-native[data-directory-stage="1"] .native-left-photo,
+.figma-directory-native[data-directory-stage="1"] .native-left-profile,
+.figma-directory-native[data-directory-stage="2"] .native-left-photo,
+.figma-directory-native[data-directory-stage="2"] .native-left-profile,
+.figma-directory-native[data-directory-stage="2"] .native-left-research,
+.figma-directory-native[data-directory-stage="2"] .native-left-student,
+.figma-directory-native[data-directory-stage="3"] .native-left-photo,
+.figma-directory-native[data-directory-stage="3"] .native-left-profile,
+.figma-directory-native[data-directory-stage="3"] .native-left-research,
+.figma-directory-native[data-directory-stage="3"] .native-left-student,
+.figma-directory-native[data-directory-stage="3"] .native-left-awards,
+.figma-directory-native[data-directory-stage="3"] .native-left-tools,
+.figma-directory-native[data-directory-stage="4"] .directory-module,
+.figma-directory-native[data-directory-stage="5"] .directory-module,
+.figma-directory-native[data-directory-stage="6"] .directory-module,
+.figma-directory-native[data-directory-stage="7"] .directory-module,
+.figma-directory-native[data-directory-stage="8"] .directory-module,
+.figma-directory-native[data-directory-stage="9"] .directory-module { opacity: 1; transform: translate3d(0,0,0); }
+.figma-directory-native[data-directory-stage="4"] .native-right-numbers,
+.figma-directory-native[data-directory-stage="4"] .native-right-titles,
+.figma-directory-native[data-directory-stage="4"] .native-right-subtitles,
+.figma-directory-native[data-directory-stage="4"] .native-right-cards,
+.figma-directory-native[data-directory-stage="4"] .native-right-categories { opacity: 0; transform: translate3d(0,-18px,0); }
+.figma-directory-native[data-directory-stage="5"] .native-right-titles,
+.figma-directory-native[data-directory-stage="5"] .native-right-subtitles,
+.figma-directory-native[data-directory-stage="5"] .native-right-cards,
+.figma-directory-native[data-directory-stage="5"] .native-right-categories { opacity: 0; transform: translate3d(0,-18px,0); }
+.figma-directory-native[data-directory-stage="6"] .native-right-subtitles,
+.figma-directory-native[data-directory-stage="6"] .native-right-cards,
+.figma-directory-native[data-directory-stage="6"] .native-right-categories { opacity: 0; transform: translate3d(0,-18px,0); }
+.figma-directory-native[data-directory-stage="7"] .native-right-cards,
+.figma-directory-native[data-directory-stage="7"] .native-right-categories { opacity: 0; transform: translate3d(0,-18px,0); }
+.figma-directory-native[data-directory-stage="8"] .native-right-categories { opacity: 0; transform: translate3d(0,-18px,0); }
+.figma-directory-native .directory-module { opacity: 0; transform: translate3d(-24px,0,0); transition: opacity 1.1s ease-in-out, transform 1.35s cubic-bezier(.22,1,.36,1); }
+.figma-directory-native .native-right-content, .figma-directory-native .native-right-numbers, .figma-directory-native .native-right-titles, .figma-directory-native .native-right-subtitles, .figma-directory-native .native-right-cards, .figma-directory-native .native-right-categories { transform: translate3d(0,26px,0); }
+.figma-directory-native.directory-copy-revealed .directory-module { opacity: 1; transform: translate3d(0,0,0); }
+.figma-directory-native.directory-copy-revealed .native-left-profile { transition-delay: .12s; }
+.figma-directory-native.directory-copy-revealed .native-left-research { transition-delay: .26s; }
+.figma-directory-native.directory-copy-revealed .native-left-awards { transition-delay: .38s; }
+.figma-directory-native.directory-copy-revealed .native-left-student { transition-delay: .5s; }
+.figma-directory-native.directory-copy-revealed .native-left-tools { transition-delay: .62s; }
+.figma-directory-native.directory-copy-revealed .native-right-content { transition-delay: .82s; }
+.figma-directory-native.directory-copy-revealed .native-right-numbers { transition-delay: .96s; }
+.figma-directory-native.directory-copy-revealed .native-right-titles { transition-delay: 1.1s; }
+.figma-directory-native.directory-copy-revealed .native-right-subtitles { transition-delay: 1.24s; }
+.figma-directory-native.directory-copy-revealed .native-right-cards { transition-delay: 1.38s; }
+.figma-directory-native.directory-copy-revealed .native-right-categories { transition-delay: 1.52s; }
+
+/* Page 02: original Figma module layers, positioned from Figma absolute render bounds. */
+.figma-directory { aspect-ratio: 1724 / 609; background: #000; overflow: hidden; position: relative; }
+.directory-layer { display: block; position: absolute; }
+.directory-bg { height: 100%; inset: 0; width: 100%; }
+.directory-photo { height: calc(327 / 609 * 100%); left: 0; top: 0; width: calc(239 / 1724 * 100%); }
+.directory-about { height: calc(246 / 609 * 100%); left: calc(18 / 1724 * 100%); top: calc(331 / 609 * 100%); width: calc(204 / 1724 * 100%); }
+.directory-records { height: calc(539 / 609 * 100%); left: calc(241 / 1724 * 100%); top: calc(34 / 609 * 100%); width: calc(598 / 1724 * 100%); }
+.directory-content-bottom { height: calc(33 / 609 * 100%); left: calc(939 / 1724 * 100%); top: calc(535 / 609 * 100%); width: calc(762 / 1724 * 100%); }
+.directory-projects { height: calc(264 / 609 * 100%); left: calc(885 / 1724 * 100%); top: calc(248 / 609 * 100%); width: calc(816 / 1724 * 100%); }
+.directory-content-label { height: calc(29.68 / 609 * 100%); left: calc(1479.71 / 1724 * 100%); top: calc(44.88 / 609 * 100%); width: calc(221.58 / 1724 * 100%); }
+.directory-number-1 { height: calc(57.12 / 609 * 100%); left: calc(885.07 / 1724 * 100%); top: calc(104.88 / 609 * 100%); width: calc(16.08 / 1724 * 100%); }
+.directory-number-2 { height: calc(58.24 / 609 * 100%); left: calc(1052.92 / 1724 * 100%); top: calc(103.76 / 609 * 100%); width: calc(35.2 / 1724 * 100%); }
+.directory-number-3 { height: calc(59.36 / 609 * 100%); left: calc(1221.54 / 1724 * 100%); top: calc(103.76 / 609 * 100%); width: calc(36.96 / 1724 * 100%); }
+.directory-number-4 { height: calc(57.12 / 609 * 100%); left: calc(1389.5 / 1724 * 100%); top: calc(104.88 / 609 * 100%); width: calc(43.12 / 1724 * 100%); }
+.directory-number-5 { height: calc(58.24 / 609 * 100%); left: calc(1559.54 / 1724 * 100%); top: calc(104.88 / 609 * 100%); width: calc(37.04 / 1724 * 100%); }
+.directory-title-1 { height: calc(29.87 / 609 * 100%); left: calc(884.92 / 1724 * 100%); top: calc(174.8 / 609 * 100%); width: calc(110.64 / 1724 * 100%); }
+.directory-title-2 { height: calc(31.16 / 609 * 100%); left: calc(1052.66 / 1724 * 100%); top: calc(174.08 / 609 * 100%); width: calc(52.99 / 1724 * 100%); }
+.directory-title-3 { height: calc(31.16 / 609 * 100%); left: calc(1220.66 / 1724 * 100%); top: calc(174.08 / 609 * 100%); width: calc(53.23 / 1724 * 100%); }
+.directory-title-4 { height: calc(31.16 / 609 * 100%); left: calc(1388.66 / 1724 * 100%); top: calc(174.08 / 609 * 100%); width: calc(114.44 / 1724 * 100%); }
+.directory-title-5 { height: calc(31.16 / 609 * 100%); left: calc(1558.66 / 1724 * 100%); top: calc(174.08 / 609 * 100%); width: calc(114.3 / 1724 * 100%); }
+.directory-subtitle-1 { height: calc(9.25 / 609 * 100%); left: calc(885.99 / 1724 * 100%); top: calc(217.75 / 609 * 100%); width: calc(142.13 / 1724 * 100%); }
+.directory-subtitle-2 { height: calc(9.31 / 609 * 100%); left: calc(1053.48 / 1724 * 100%); top: calc(217.71 / 609 * 100%); width: calc(89.1 / 1724 * 100%); }
+.directory-subtitle-3 { height: calc(9.22 / 609 * 100%); left: calc(1221.48 / 1724 * 100%); top: calc(217.79 / 609 * 100%); width: calc(99.1 / 1724 * 100%); }
+.directory-subtitle-4 { height: calc(9.3 / 609 * 100%); left: calc(1390.8 / 1724 * 100%); top: calc(217.72 / 609 * 100%); width: calc(107.57 / 1724 * 100%); }
+.directory-subtitle-5 { height: calc(9.29 / 609 * 100%); left: calc(1558.45 / 1724 * 100%); top: calc(217.72 / 609 * 100%); width: calc(89.13 / 1724 * 100%); }
+
+.figma-directory .directory-layer:not(.directory-bg) { opacity: 0; transform: translate3d(-30px, 0, 0); transition: opacity .85s ease, transform 1.05s cubic-bezier(.22, 1, .36, 1); will-change: opacity, transform; }
+.figma-directory.directory-left-revealed .directory-photo, .figma-directory.directory-left-revealed .directory-about { opacity: 1; transform: translate3d(0, 0, 0); }
+.figma-directory.directory-left-revealed .directory-records { opacity: 1; transform: translate3d(0, 0, 0); transition-delay: .44s; }
+.figma-directory.directory-right-revealed .directory-layer:not(.directory-bg) { opacity: 1; transform: translate3d(0, 0, 0); }
+.figma-directory.directory-right-revealed .directory-content-label { transition-delay: .08s; }
+.figma-directory.directory-right-revealed .directory-number-1, .figma-directory.directory-right-revealed .directory-number-2, .figma-directory.directory-right-revealed .directory-number-3, .figma-directory.directory-right-revealed .directory-number-4, .figma-directory.directory-right-revealed .directory-number-5 { transition-delay: .26s; }
+.figma-directory.directory-right-revealed .directory-title-1, .figma-directory.directory-right-revealed .directory-title-2, .figma-directory.directory-right-revealed .directory-title-3, .figma-directory.directory-right-revealed .directory-title-4, .figma-directory.directory-right-revealed .directory-title-5 { transition-delay: .46s; }
+.figma-directory.directory-right-revealed .directory-subtitle-1, .figma-directory.directory-right-revealed .directory-subtitle-2, .figma-directory.directory-right-revealed .directory-subtitle-3, .figma-directory.directory-right-revealed .directory-subtitle-4, .figma-directory.directory-right-revealed .directory-subtitle-5 { transition-delay: .64s; }
+.figma-directory.directory-right-revealed .directory-projects { transition-delay: .84s; transform: translate3d(0, 0, 0); }
+.figma-directory.directory-right-revealed .directory-content-bottom { transition-delay: 1.08s; }
+.figma-nova { aspect-ratio: 1724 / 609; background: #000; overflow: hidden; position: relative; }
+.figma-project-cover { aspect-ratio: 1724 / 609; background: #000; overflow: hidden; position: relative; }
+.project-cover-background, .project-cover-layer { display: block; position: absolute; }
+.project-cover-background { height: 100%; inset: 0; width: 100%; }
+.project-cover-layer { height: calc(var(--h) / 609 * 100%); left: calc(var(--x) / 1724 * 100%); object-fit: fill; top: calc(var(--y) / 609 * 100%); width: calc(var(--w) / 1724 * 100%); }
+.lumen-fridge-reveal { height: 100%; inset: 0; pointer-events: none; position: absolute; width: 100%; z-index: 2; }
+.lumen-fridge-source-cut { height: 100%; inset: 0; pointer-events: none; position: absolute; transform: scale(1); transform-origin: 76% 51%; transition: transform .65s cubic-bezier(.22, 1, .36, 1); width: 100%; will-change: transform; }
+.lumen-fridge-hotspot { background: transparent; border: 0; cursor: pointer; height: calc(480 / 609 * 100%); left: calc(1104 / 1724 * 100%); padding: 0; position: absolute; top: calc(84 / 609 * 100%); width: calc(410 / 1724 * 100%); z-index: 3; }
+.figma-lumen:has(.lumen-fridge-hotspot:hover) .lumen-fridge-source-cut,
+.figma-lumen:has(.lumen-fridge-hotspot:focus-visible) .lumen-fridge-source-cut { transform: scale(1.075); }
+.lumen-fridge-hotspot:focus-visible { outline: 1px solid rgba(184,222,16,.85); outline-offset: 4px; }
+.lumen-scroll-layer { opacity: 0; transform: translate3d(0, 28px, 0); transition: opacity 1.2s ease-in-out, transform 1.5s cubic-bezier(.22, 1, .36, 1); will-change: opacity, transform; }
+.lumen-scroll-pending.lumen-stage-1 .lumen-stage-1,
+.lumen-scroll-pending.lumen-stage-2 .lumen-stage-1,
+.lumen-scroll-pending.lumen-stage-2 .lumen-stage-2,
+.lumen-scroll-pending.lumen-stage-3 .lumen-stage-1,
+.lumen-scroll-pending.lumen-stage-3 .lumen-stage-2,
+.lumen-scroll-pending.lumen-stage-3 .lumen-stage-3,
+.lumen-scroll-pending.lumen-stage-4 .lumen-scroll-layer { opacity: 1; transform: translate3d(0, 0, 0); }
+.figma-jinxiang { background: #0b0803; }
+.jinxiang-gradient { height: 100%; inset: 0; pointer-events: none; position: absolute; width: 100%; }
+.jinxiang-scroll-layer { opacity: 0; transform: translate3d(0, 28px, 0); transition: opacity 1.2s ease-in-out, transform 1.5s cubic-bezier(.22, 1, .36, 1); will-change: opacity, transform; }
+.jinxiang-scroll-pending.jinxiang-stage-1 .jinxiang-stage-1,
+.jinxiang-scroll-pending.jinxiang-stage-2 .jinxiang-stage-1,
+.jinxiang-scroll-pending.jinxiang-stage-2 .jinxiang-stage-2,
+.jinxiang-scroll-pending.jinxiang-stage-3 .jinxiang-stage-1,
+.jinxiang-scroll-pending.jinxiang-stage-3 .jinxiang-stage-2,
+.jinxiang-scroll-pending.jinxiang-stage-3 .jinxiang-stage-3,
+.jinxiang-scroll-pending.jinxiang-stage-4 .jinxiang-scroll-layer { opacity: 1; transform: translate3d(0, 0, 0); }
+.jinxiang-zoom-interaction { cursor: pointer; overflow: visible; }
+.jinxiang-zoom-interaction > img { display: block; height: 100%; transform: scale(1); transform-origin: center; transition: transform .65s cubic-bezier(.22, 1, .36, 1); width: 100%; will-change: transform; }
+.jinxiang-zoom-interaction:hover,
+.jinxiang-zoom-interaction:focus-visible { z-index: 4; }
+.jinxiang-zoom-interaction:hover > img,
+.jinxiang-zoom-interaction:focus-visible > img { transform: scale(1.06); }
+.jinxiang-zoom-interaction:focus-visible { outline: 1px solid rgba(255,255,255,.85); outline-offset: 4px; }
+.figma-tiger { background: #08000d; }
+.tiger-base { background: linear-gradient(88.437648deg, rgba(121,30,216,.245) 3.6533%, rgba(0,0,0,.392) 27.813%, rgba(0,0,0,.388) 51.526%, rgba(0,0,0,.383) 74.869%, rgba(241,63,137,.245) 96.714%), #000; inset: 0; position: absolute; }
+.tiger-scroll-layer { opacity: 0; transform: translate3d(0, 28px, 0); transition: opacity 1.2s ease-in-out, transform 1.5s cubic-bezier(.22, 1, .36, 1); will-change: opacity, transform; }
+.tiger-scroll-pending.tiger-stage-1 .tiger-stage-1,
+.tiger-scroll-pending.tiger-stage-2 .tiger-stage-1,
+.tiger-scroll-pending.tiger-stage-2 .tiger-stage-2,
+.tiger-scroll-pending.tiger-stage-3 .tiger-stage-1,
+.tiger-scroll-pending.tiger-stage-3 .tiger-stage-2,
+.tiger-scroll-pending.tiger-stage-3 .tiger-stage-3,
+.tiger-scroll-pending.tiger-stage-4 .tiger-scroll-layer { opacity: 1; transform: translate3d(0, 0, 0); }
+.tiger-zoom-interaction { cursor: pointer; overflow: visible; }
+.tiger-zoom-interaction > img { display: block; height: 100%; transform: scale(1); transform-origin: center; transition: transform .65s cubic-bezier(.22, 1, .36, 1); width: 100%; will-change: transform; }
+.tiger-zoom-interaction:hover,
+.tiger-zoom-interaction:focus-visible { z-index: 4; }
+.tiger-zoom-interaction:hover > img,
+.tiger-zoom-interaction:focus-visible > img { transform: scale(1.06); }
+.tiger-zoom-interaction:focus-visible { outline: 1px solid rgba(255,255,255,.85); outline-offset: 4px; }
+.figma-other-works { background: #000c1b; }
+.other-base { background: linear-gradient(90deg, #000c1b 0%, #102a4b 100%); inset: 0; position: absolute; }
+.other-layer { pointer-events: none; }
+.other-scroll-layer { opacity: 0; transform: translate3d(0, 28px, 0); transition: opacity 1.2s ease-in-out, transform 1.5s cubic-bezier(.22, 1, .36, 1); will-change: opacity, transform; }
+.other-scroll-pending.other-stage-1 .other-stage-1,
+.other-scroll-pending.other-stage-2 .other-stage-1,
+.other-scroll-pending.other-stage-2 .other-stage-2,
+.other-scroll-pending.other-stage-3 .other-stage-1,
+.other-scroll-pending.other-stage-3 .other-stage-2,
+.other-scroll-pending.other-stage-3 .other-stage-3,
+.other-scroll-pending.other-stage-4 .other-scroll-layer { opacity: 1; transform: translate3d(0, 0, 0); }
+.other-zoom-interaction { cursor: pointer; overflow: visible; pointer-events: auto; }
+.other-zoom-interaction > img { display: block; height: 100%; transform: scale(1); transform-origin: center; transition: transform .65s cubic-bezier(.22, 1, .36, 1); width: 100%; will-change: transform; }
+.other-zoom-interaction:hover,
+.other-zoom-interaction:focus-visible { z-index: 4; }
+.other-zoom-interaction:hover > img,
+.other-zoom-interaction:focus-visible > img { transform: scale(1.06); }
+.other-zoom-interaction:focus-visible { outline: 1px solid rgba(255,255,255,.85); outline-offset: 4px; }
+.other-visual { z-index: 2; }
+.other-detail { z-index: 3; }
+.other-zoom-interaction.other-visual:hover,
+.other-zoom-interaction.other-visual:focus-visible { z-index: 2; }
+.other-rabbit { cursor: pointer; overflow: visible; pointer-events: auto; z-index: 3; }
+.other-rabbit:hover,
+.other-rabbit:focus-visible { z-index: 4; }
+.other-rabbit-node { --rabbit-base-rotation: 0deg; display: block; height: 100%; overflow: visible; transform: rotate(var(--rabbit-base-rotation)) scale(1); transform-origin: center; transition: transform .4s cubic-bezier(.22, 1, .36, 1); width: 100%; will-change: transform; }
+.other-rabbit:hover .other-rabbit-node,
+.other-rabbit:focus-visible .other-rabbit-node { animation: other-rabbit-swing 1.35s both; }
+.other-rabbit:focus-visible { outline: 1px solid rgba(255,255,255,.85); outline-offset: 4px; }
+.other-rabbit-node > img { display: block; height: 100%; left: 0; opacity: .9; position: absolute; top: 0; width: 100%; }
+.other-rabbit-black .other-rabbit-node { --rabbit-base-rotation: 3.29167742611271deg; }
+@keyframes other-rabbit-swing {
+  0% { animation-timing-function: cubic-bezier(.2, -.45, .35, 1.4); transform: rotate(var(--rabbit-base-rotation)) scale(1); }
+  13% { transform: rotate(var(--rabbit-base-rotation)) scale(.94); }
+  30% { animation-timing-function: cubic-bezier(.16, .88, .32, 1.18); transform: rotate(var(--rabbit-base-rotation)) scale(1.15); }
+  41% { animation-timing-function: cubic-bezier(.42, 0, .58, 1); transform: rotate(calc(var(--rabbit-base-rotation) + 15deg)) scale(1.06); }
+  57% { animation-timing-function: cubic-bezier(.42, 0, .58, 1); transform: rotate(calc(var(--rabbit-base-rotation) - 11deg)) scale(1.06); }
+  72% { animation-timing-function: cubic-bezier(.42, 0, .58, 1); transform: rotate(calc(var(--rabbit-base-rotation) + 7deg)) scale(1.06); }
+  86% { animation-timing-function: cubic-bezier(.42, 0, .58, 1); transform: rotate(calc(var(--rabbit-base-rotation) - 3deg)) scale(1.06); }
+  100% { transform: rotate(var(--rabbit-base-rotation)) scale(1.06); }
+}
+.nova-layer, .nova-rectangle { position: absolute; }
+.nova-layer { display: block; height: auto; pointer-events: none; width: auto; }
+.nova-bg { height: 100%; left: calc(213 / 1724 * 100%); top: 0; width: auto; }
+.nova-corners { height: calc(583 / 609 * 100%); left: calc(13.5 / 1724 * 100%); top: calc(13.5 / 609 * 100%); width: calc(1679.5 / 1724 * 100%); }
+.nova-categories { height: calc(17 / 609 * 100%); left: calc(1110 / 1724 * 100%); top: calc(37 / 609 * 100%); width: calc(561 / 1724 * 100%); }
+.nova-number { height: calc(60.5 / 609 * 100%); left: calc(49 / 1724 * 100%); top: calc(76.5 / 609 * 100%); width: calc(89 / 1724 * 100%); }
+.nova-badge { height: calc(33.3673 / 609 * 100%); left: calc(465 / 1724 * 100%); top: calc(188 / 609 * 100%); width: calc(33.3673 / 1724 * 100%); }
+.nova-built { height: calc(87 / 609 * 100%); left: calc(445 / 1724 * 100%); top: calc(219 / 609 * 100%); width: calc(274.5 / 1724 * 100%); }
+.nova-built-line { height: calc(1 / 609 * 100%); left: calc(498 / 1724 * 100%); top: calc(310 / 609 * 100%); width: calc(248 / 1724 * 100%); }
+.nova-note-head { height: calc(19 / 609 * 100%); left: calc(54.5 / 1724 * 100%); top: calc(365 / 609 * 100%); width: calc(365 / 1724 * 100%); }
+.nova-type { height: calc(9.31 / 609 * 100%); left: calc(1598.64 / 1724 * 100%); top: calc(547.77 / 609 * 100%); width: calc(94.08 / 1724 * 100%); }
+.nova-date { height: calc(7.42 / 609 * 100%); left: calc(1641.62 / 1724 * 100%); top: calc(566.72 / 609 * 100%); width: calc(51.76 / 1724 * 100%); }
+.nova-note-cn { height: calc(63.5 / 609 * 100%); left: calc(54.5 / 1724 * 100%); top: calc(405.5 / 609 * 100%); width: calc(812 / 1724 * 100%); }
+.nova-note-en { height: calc(50 / 609 * 100%); left: calc(54 / 1724 * 100%); top: calc(485.5 / 609 * 100%); width: calc(811.5 / 1724 * 100%); }
+.nova-text { pointer-events: none; position: absolute; z-index: 4; }
+.nova-text img { display: block; height: 100%; width: 100%; }
+.nova-scroll-layer { opacity: 0; transform: translate3d(0, 28px, 0); transition: opacity 1.2s ease-in-out, transform 1.5s cubic-bezier(.22, 1, .36, 1); will-change: opacity, transform; }
+.nova-copy-revealed .nova-scroll-layer { opacity: 1; transform: translate3d(0, 0, 0); }
+.nova-scroll-pending.nova-stage-1 .nova-corners,
+.nova-scroll-pending.nova-stage-1 .nova-categories,
+.nova-scroll-pending.nova-stage-2 .nova-corners,
+.nova-scroll-pending.nova-stage-2 .nova-categories,
+.nova-scroll-pending.nova-stage-2 .nova-number,
+.nova-scroll-pending.nova-stage-2 .nova-text-nova,
+.nova-scroll-pending.nova-stage-3 .nova-corners,
+.nova-scroll-pending.nova-stage-3 .nova-categories,
+.nova-scroll-pending.nova-stage-3 .nova-number,
+.nova-scroll-pending.nova-stage-3 .nova-text-nova,
+.nova-scroll-pending.nova-stage-3 .nova-badge,
+.nova-scroll-pending.nova-stage-3 .nova-built,
+.nova-scroll-pending.nova-stage-3 .nova-built-line,
+.nova-scroll-pending.nova-stage-3 .nova-text-cn,
+.nova-scroll-pending.nova-stage-3 .nova-text-en,
+.nova-scroll-pending.nova-stage-3 .nova-type,
+.nova-scroll-pending.nova-stage-3 .nova-date,
+.nova-scroll-pending.nova-stage-3 .nova-note-head,
+.nova-scroll-pending.nova-stage-3 .nova-note-cn,
+.nova-scroll-pending.nova-stage-3 .nova-note-en,
+.nova-scroll-pending.nova-stage-4 .nova-scroll-layer { opacity: 1; transform: translate3d(0, 0, 0); }
+.nova-scroll-pending.nova-stage-4 .nova-rectangle { transform: rotate(-2.347537deg) translate3d(0, 0, 0); }
+.nova-copy-revealed .nova-number { transition-delay: .08s; }
+.nova-copy-revealed .nova-rectangle { transition-delay: .28s; }
+.nova-copy-revealed .nova-badge { transition-delay: .58s; }
+.nova-copy-revealed .nova-built { transition-delay: .76s; }
+.nova-copy-revealed .nova-built-line { transition-delay: .94s; }
+.nova-copy-revealed .nova-text-nova { transition-delay: .18s; }
+.nova-copy-revealed .nova-text-cn { transition-delay: .72s; }
+.nova-copy-revealed .nova-text-en { transition-delay: 1.24s; }
+.nova-copy-revealed .nova-corners { transition-delay: .05s; }
+.nova-copy-revealed .nova-categories { transition-delay: .22s; }
+.nova-copy-revealed .nova-note-head { transition-delay: 1.08s; }
+.nova-copy-revealed .nova-note-cn { transition-delay: 1.36s; }
+.nova-copy-revealed .nova-note-en { transition-delay: 1.58s; }
+.nova-copy-revealed .nova-type { transition-delay: 1.12s; }
+.nova-copy-revealed .nova-date { transition-delay: 1.24s; }
+.nova-text-nova { height: calc(89.5 / 609 * 100%); left: calc(58 / 1724 * 100%); top: calc(159.5 / 609 * 100%); width: calc(376.5 / 1724 * 100%); }
+.nova-text-cn { height: calc(20.5 / 609 * 100%); left: calc(55.5 / 1724 * 100%); top: calc(290 / 609 * 100%); width: calc(346.5 / 1724 * 100%); }
+.nova-text-en { height: calc(6.5 / 609 * 100%); left: calc(55 / 1724 * 100%); top: calc(316.5 / 609 * 100%); width: calc(311.5 / 1724 * 100%); }
+.nova-rectangle { cursor: pointer; height: calc(309.2081 / 609 * 100%); left: calc(865.06 / 1724 * 100%); overflow: hidden; top: calc(76.751 / 609 * 100%); transform: rotate(-2.347537deg) translate3d(0, 28px, 0); transform-origin: top left; width: calc(570.2261 / 1724 * 100%); z-index: 3; }
+.nova-copy-revealed .nova-rectangle { transform: rotate(-2.347537deg) translate3d(0, 0, 0); }
+.nova-rectangle img { display: block; height: 289.98%; left: -23.57%; max-width: none; position: absolute; top: -94.89%; transform: scale(1); transform-origin: center; transition: transform .65s cubic-bezier(.22, 1, .36, 1); width: 157.24%; will-change: transform; }
+.nova-rectangle:hover img, .nova-rectangle:focus-visible img { transform: scale(1.075); }
+.nova-rectangle:focus-visible { outline: 1px solid rgba(255,255,255,.8); outline-offset: 4px; }
+
+/* Project-cover preview: the verified interactive Figma layers arrive after all
+   copy, then briefly demonstrate their own existing interaction before resting. */
+@keyframes other-rabbit-preview {
+  0% { animation-timing-function: cubic-bezier(.2, -.45, .35, 1.4); transform: rotate(var(--rabbit-base-rotation)) scale(1); }
+  13% { transform: rotate(var(--rabbit-base-rotation)) scale(.94); }
+  30% { animation-timing-function: cubic-bezier(.16, .88, .32, 1.18); transform: rotate(var(--rabbit-base-rotation)) scale(1.14); }
+  44% { animation-timing-function: cubic-bezier(.42, 0, .58, 1); transform: rotate(calc(var(--rabbit-base-rotation) + 13deg)) scale(1.045); }
+  61% { transform: rotate(calc(var(--rabbit-base-rotation) - 8deg)) scale(1.025); }
+  78% { transform: rotate(calc(var(--rabbit-base-rotation) + 4deg)) scale(1.01); }
+  100% { transform: rotate(var(--rabbit-base-rotation)) scale(1); }
+}
+.figma-nova.cover-preview-expanded .nova-rectangle img,
+.figma-lumen.cover-preview-expanded .lumen-fridge-source-cut { transform: scale(1.075); }
+.figma-jinxiang.cover-preview-expanded .jinxiang-zoom-interaction > img,
+.figma-tiger.cover-preview-expanded .tiger-zoom-interaction > img,
+.figma-other-works.cover-preview-expanded .other-zoom-interaction > img { transform: scale(1.06); }
+.other-rabbit-node.other-rabbit-previewing { animation: other-rabbit-preview 1.22s both; }
+.page.is-visible .page-caption { opacity: 1; transform: translateY(0); }
+
+/* Page 02 — exact Figma 270:2138 browser layer tree.  Coordinates are based on
+   Figma absoluteRenderBounds in its 1724 × 609 visual canvas. */
+.figma-directory-context { aspect-ratio: 1724 / 609; background: #000; container-type: inline-size; isolation: isolate; overflow: hidden; position: relative; }
+.fd-image, .fd-vector, .fd-text { position: absolute; }
+.fd-image, .fd-vector { display: block; }
+.fd-text { color: #fff; font-style: normal; margin: 0; padding: 0; transform-origin: left top; white-space: nowrap; z-index: 3; }
+.fd-text br { display: block; content: ''; }
+.fd-background { height: 100%; inset: 0; left: auto; top: auto; width: 100%; z-index: 0; }
+.fd-image, .fd-vector { z-index: 2; }
+.fd-card { z-index: 2; }
+
+/* The static state remains the Figma composition.  This class only provides
+   the later scroll reveal and never changes an element's Figma geometry. */
+.figma-directory-context .fd-photo, .figma-directory-context .fd-left, .figma-directory-context .fd-research, .figma-directory-context .fd-student, .figma-directory-context .fd-awards, .figma-directory-context .fd-tools, .figma-directory-context .fd-right { transition: opacity 1.1s ease-in-out, transform 1.35s cubic-bezier(.22,1,.36,1); will-change: opacity, transform; }
+.figma-directory-context.directory-copy-pending .fd-photo, .figma-directory-context.directory-copy-pending .fd-left, .figma-directory-context.directory-copy-pending .fd-research, .figma-directory-context.directory-copy-pending .fd-student, .figma-directory-context.directory-copy-pending .fd-awards, .figma-directory-context.directory-copy-pending .fd-tools { opacity: 0; transform: translate3d(-24px,0,0); }
+.figma-directory-context.directory-copy-pending .fd-right { opacity: 0; transform: translate3d(0,24px,0); }
+.figma-directory-context.directory-copy-revealed .fd-photo, .figma-directory-context.directory-copy-revealed .fd-left, .figma-directory-context.directory-copy-revealed .fd-research, .figma-directory-context.directory-copy-revealed .fd-student, .figma-directory-context.directory-copy-revealed .fd-awards, .figma-directory-context.directory-copy-revealed .fd-tools, .figma-directory-context.directory-copy-revealed .fd-right { opacity: 1; transform: translate3d(0,0,0); }
+.figma-directory-context.directory-copy-revealed .fd-photo { transition-delay: .02s; }
+.figma-directory-context.directory-copy-revealed .fd-left { transition-delay: .14s; }
+.figma-directory-context.directory-copy-revealed .fd-research { transition-delay: .32s; }
+.figma-directory-context.directory-copy-revealed .fd-student { transition-delay: .5s; }
+.figma-directory-context.directory-copy-revealed .fd-awards { transition-delay: .68s; }
+.figma-directory-context.directory-copy-revealed .fd-tools { transition-delay: .86s; }
+.figma-directory-context.directory-copy-revealed .fd-right { transition-delay: 1.18s; }
+
+/* Page 02: transparent interaction targets aligned to the original 1724 × 609 Figma cards. */
+.directory-interactions { aspect-ratio: 1724 / 609; inset: 0; pointer-events: none; position: absolute; width: 100%; z-index: 4; }
+.directory-hotspot { cursor: pointer; height: calc(264 / 609 * 100%); left: calc(var(--x) / 1724 * 100%); overflow: hidden; pointer-events: auto; position: absolute; top: calc(var(--y) / 609 * 100%); width: calc(var(--w) / 1724 * 100%); }
+.directory-card-image { display: block; height: 100%; object-fit: fill; opacity: 0; transform: scale(1); transform-origin: center; transition: opacity .16s ease, transform .55s cubic-bezier(.22, 1, .36, 1), filter .35s ease; width: 100%; will-change: opacity, transform; }
+.directory-hotspot:hover .directory-card-image, .directory-hotspot:focus-visible .directory-card-image { filter: brightness(1.08); opacity: 1; transform: scale(1.045); }
+.directory-hotspot:focus-visible { outline: 1px solid rgba(255,255,255,.82); outline-offset: 3px; }
+
+/* Figma page 01 — shown in its intended 1724 × 609 orientation. */
+.figma-cover { aspect-ratio: 1724 / 609; background: #000; min-height: 440px; overflow: hidden; position: relative; }
+/* image 2157: it was placed as a 610 × 1724 rotated fill in Figma. */
+.cover-background { filter: blur(1.6px); height: 283.25%; left: 32.34%; object-fit: fill; position: absolute; top: -91.63%; transform: rotate(90deg); width: 35.33%; }
+.cover-layer { color: #fff; position: absolute; transform-origin: center; transition: transform .46s var(--ease), filter .46s ease; z-index: 3; }
+.cover-layer:hover { filter: brightness(1.24); transform: scale(1.065); }
+.figma-cover .cover-layer, .figma-end .end-layer { opacity: 0; transform: translate3d(0, 34px, 0); transition: opacity 1.2s ease-in-out, transform 1.5s cubic-bezier(.22, 1, .36, 1); }
+.figma-cover.cover-copy-revealed .cover-layer, .figma-end.end-copy-revealed .end-layer { opacity: 1; transform: translate3d(0, 0, 0); }
+.figma-cover.cover-copy-revealed .cover-word { transition-delay: .08s; }
+.figma-cover.cover-copy-revealed .cover-title { transition-delay: .32s; }
+.figma-cover.cover-copy-revealed .cover-year-start { transition-delay: .5s; }
+.figma-cover.cover-copy-revealed .cover-line-top { transition-delay: .64s; }
+.figma-cover.cover-copy-revealed .cover-year-end { transition-delay: .78s; }
+.figma-cover.cover-copy-revealed .cover-name { transition-delay: .96s; }
+.figma-cover.cover-copy-revealed .cover-line-bottom { transition-delay: 1.08s; }
+.figma-cover.cover-copy-revealed .cover-categories { transition-delay: 1.2s; }
+.figma-cover.cover-copy-revealed .cover-mark-large { transition-delay: 1.32s; }
+.cover-title { font: 100 clamp(12px, .93vw, 16px)/1 'PingFang SC', 'Microsoft YaHei', sans-serif; left: 78.45%; letter-spacing: .3125em; text-transform: uppercase; top: 17.25%; white-space: nowrap; }
+.cover-year { font: 200 italic clamp(14px, 1.16vw, 20px)/1 'Roboto Mono', 'DM Mono', monospace; letter-spacing: .25em; right: 6.55%; text-shadow: 0 1px 8px rgba(0, 0, 0, .8); }
+.cover-year-start { --base-transform: none; top: 57.2%; }
+.cover-year-end { --base-transform: none; font-weight: 600; top: 70.5%; }
+.cover-line { object-fit: fill; }
+/* Vector 3211: the short divider between 2023 and 2026. */
+.cover-line-top { height: 6.57%; right: 6.54%; top: 62.0%; width: 1px; }
+/* Vector 3212: after the artboard's legacy rotation, this is a horizontal line beneath JIN TAIZHEN. */
+.cover-line-bottom { display: block; height: 1px; left: 6.55%; top: 50%; width: 7.19%; }
+.cover-name { bottom: 50.7%; font: 400 clamp(13px, 1.04vw, 18px)/1 'Ranga', 'Times New Roman', serif; left: 6.2%; letter-spacing: .28em; white-space: nowrap; }
+.cover-categories { bottom: 17.4%; font: 600 clamp(10px, .93vw, 16px)/1 'PingFang SC', 'Microsoft YaHei', sans-serif; left: 6.05%; letter-spacing: .125em; text-shadow: 0 1px 8px rgba(0, 0, 0, .8); white-space: nowrap; }
+.cover-categories i { font-style: normal; font-weight: 100; margin: 0 .36em; }
+.cover-word { font: 600 clamp(72px, 7.42vw, 128px)/.8 'PingFang SC', 'Microsoft YaHei', sans-serif; left: 5.8%; letter-spacing: .04em; top: 16%; text-transform: uppercase; white-space: nowrap; }
+.cover-mark { height: auto; width: auto; }
+.cover-mark-large { --base-transform: none; left: 47.5%; top: 23%; width: 1.51%; }
+.cover-mark-small { display: none; }
+.figma-cover .particle-zone { height: 100%; top: 0; z-index: 1; }
+
+/* Page 28 — exact Figma Frame 270:2112 source layers.  This mirrors the
+   approved cover reveal without ever transforming a flattened page image. */
+.figma-end { aspect-ratio: 1724 / 609; background: #000; min-height: 440px; overflow: hidden; position: relative; }
+.end-background { filter: blur(1.6px); height: 283.25%; left: 32.34%; object-fit: fill; position: absolute; top: -91.63%; transform: rotate(90deg); width: 35.33%; }
+.end-layer { color: #fff; position: absolute; transform-origin: center; z-index: 3; }
+.figma-end .end-layer { opacity: 0; transform: translate3d(0, 34px, 0); transition: opacity 1.2s ease-in-out, transform 1.5s cubic-bezier(.22, 1, .36, 1); will-change: opacity, transform; }
+.figma-end.end-copy-revealed .end-layer { opacity: 1; transform: translate3d(0, 0, 0); }
+.figma-end.end-copy-revealed .end-thank { transition-delay: .08s; }
+.figma-end.end-copy-revealed .end-you { transition-delay: .32s; }
+.figma-end.end-copy-revealed .end-label { transition-delay: .5s; }
+.figma-end.end-copy-revealed .end-year-start { transition-delay: .64s; }
+.figma-end.end-copy-revealed .end-line-top { transition-delay: .78s; }
+.figma-end.end-copy-revealed .end-year-end { transition-delay: .92s; }
+.figma-end.end-copy-revealed .end-name { transition-delay: 1.06s; }
+.figma-end.end-copy-revealed .end-line-bottom { transition-delay: 1.18s; }
+.figma-end.end-copy-revealed .end-categories { transition-delay: 1.3s; }
+.figma-end.end-copy-revealed .end-mark-small { transition-delay: 1.42s; }
+.figma-end.end-copy-revealed .end-mark-large { transition-delay: 1.54s; }
+.end-thank, .end-you { font: 600 7.424cqw/.71 'PingFang SC', 'Microsoft YaHei', sans-serif; letter-spacing: .29cqw; white-space: nowrap; }
+.end-thank { left: 6.206%; top: 17.406%; }
+.end-you { left: 30.162%; top: 34.319%; letter-spacing: .35cqw; }
+.end-label { font: 100 0.928cqw/1 'PingFang SC', 'Microsoft YaHei', sans-serif; left: 91.3%; letter-spacing: .29cqw; top: 17.7%; white-space: nowrap; }
+.end-year { font: 200 italic 1.16cqw/1 'Roboto Mono', 'DM Mono', monospace; letter-spacing: .25em; right: 6.55%; text-shadow: 0 1px 8px rgba(0, 0, 0, .8); }
+.end-year-start { top: 57.2%; }
+.end-year-end { font-weight: 600; top: 70.5%; }
+.end-line { object-fit: fill; }
+.end-line-top { height: 6.57%; right: 6.54%; top: 62%; width: 1px; }
+.end-name { font: 400 1.044cqw/1 'Ranga', 'Times New Roman', serif; left: 6.2%; letter-spacing: .28em; top: 50.08%; white-space: nowrap; }
+.end-line-bottom { height: 1px; left: 6.55%; top: 52.7%; width: 7.19%; }
+.end-categories { font: 600 .928cqw/1 'PingFang SC', 'Microsoft YaHei', sans-serif; left: 6.05%; letter-spacing: .125em; text-shadow: 0 1px 8px rgba(0, 0, 0, .8); top: 80.3%; white-space: nowrap; }
+.end-categories i { font-style: normal; font-weight: 100; margin: 0 .36em; }
+.end-mark { height: auto; width: auto; }
+.end-mark-small { left: 18.2%; top: 25%; width: 1.276%; }
+.end-mark-large { left: 37.48%; top: 39.4%; width: 1.914%; }
+.figma-end .particle-zone { height: 100%; top: 0; z-index: 1; }
+.page[data-page="1"] .particle-zone {
+  background: radial-gradient(ellipse at 52% 100%, rgba(195,201,202,.25), transparent 66%);
+  bottom: 0;
+  filter: brightness(1.45);
+  height: 42%;
+  top: auto;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.34) 28%, rgba(0,0,0,.9) 72%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.34) 28%, rgba(0,0,0,.9) 72%, #000 100%);
+}
+
+.figma-directory-2x .particle-zone { background: radial-gradient(ellipse at 52% 0%, rgba(195,201,202,.25), transparent 66%); bottom: auto; height: 42%; pointer-events: auto; top: 0; z-index: 3; }
+.figma-directory-2x .particle-tip { display: none; }
+.figma-directory-2x .particle-zone {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.9) 34%, rgba(0,0,0,.42) 72%, transparent 100%);
+  filter: brightness(1.45);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,.9) 28%, rgba(0,0,0,.34) 72%, transparent 100%);
+}
+.figma-directory-2x > .directory-2x-node { z-index: 2; }
+.figma-directory-2x .particle-zone { opacity: 1 !important; }
+
+/* Figma page 02 — contents. Project cards are individual links and images. */
+.figma-contents { background: #080808 url('./public/figma/page-01/background.png') center/cover; color: #f6f5f2; display: grid; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; grid-template-columns: 14% 31% 55%; min-height: max(609px, 100vh); overflow: hidden; position: relative; }
+.figma-contents::before { background: rgba(0,0,0,.67); content: ''; inset: 0; position: absolute; }
+.figma-contents > * { position: relative; z-index: 1; }
+.contents-about { background: rgba(0,0,0,.58); border-right: 1px solid rgba(255,255,255,.12); display: flex; flex-direction: column; }
+.about-photo { height: 53%; overflow: hidden; position: relative; }
+.about-photo::after { background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,.7)); content: ''; inset: 0; position: absolute; z-index: 1; }
+.about-mountain { height: 100%; object-fit: cover; object-position: 48% 50%; position: absolute; width: 100%; }
+.about-person { bottom: -2%; height: 78%; object-fit: contain; object-position: bottom center; position: absolute; right: -12%; width: 110%; z-index: 2; }
+.about-title { font: 300 clamp(22px, 2.05vw, 35px)/.92 'DM Mono', monospace; left: 10%; letter-spacing: -.08em; position: absolute; top: 7%; z-index: 3; }
+.about-title b { font-weight: 600; }
+.about-info { font-size: clamp(7px, .52vw, 10px); line-height: 1.7; padding: 15px 13px; }
+.about-info p { margin: 0 0 6px; }
+.about-name { font-size: clamp(14px, 1vw, 18px); font-weight: 600; letter-spacing: .1em; }
+.about-name small { font: 400 .6em/1 'DM Mono', monospace; margin-left: 8px; }
+.about-tags { display: flex; flex-wrap: wrap; font-size: clamp(10px, .78vw, 15px); gap: 3px 10px; line-height: 1.05; margin: 14px 0; }
+.about-tags b { font-weight: 500; }
+.about-contact { color: rgba(255,255,255,.56); font: 400 8px/1.6 'DM Mono', monospace; margin-top: 22px !important; }
+.contents-records { border-right: 1px solid rgba(255,255,255,.12); display: grid; gap: 20px; grid-template-columns: 1fr 1fr; padding: 42px 26px 24px; }
+.contents-records article { font-size: clamp(7px, .5vw, 10px); line-height: 1.5; }
+.contents-records h2 { font: 500 clamp(13px, 1vw, 18px)/1 'DM Mono', monospace; letter-spacing: .025em; margin: 0 0 18px; white-space: nowrap; }
+.contents-records h3 { font-size: clamp(9px, .65vw, 13px); margin: 12px 0 4px; }
+.contents-records p { color: rgba(255,255,255,.84); margin: 0 0 8px; }
+.records-bottom { grid-column: 1 / -1; }
+.records-bottom h2 { display: inline-block; margin: 13px 20px 8px 0; }
+.skills-list { display: flex; flex-wrap: wrap; gap: 7px; }
+.skills-list span { border: 1px solid rgba(255,255,255,.45); font: 500 8px/1 'DM Mono', monospace; padding: 5px 7px; }
+.contents-projects { padding: 38px 28px 28px 20px; }
+.contents-projects > h1 { font: 400 clamp(32px, 3vw, 54px)/1 'DM Mono', monospace; letter-spacing: .1em; margin: 0 0 16px; text-align: right; }
+.project-grid { display: grid; gap: clamp(8px, 1vw, 18px); grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.content-card { color: #fff; display: block; min-width: 0; opacity: 0; text-decoration: none; transform: translateY(22px); transition: opacity .7s ease, transform .7s var(--ease); }
+.content-heading { height: 168px; overflow: visible; }
+.content-heading em { color: rgba(255,255,255,.68); display: block; font: 200 clamp(38px, 3.25vw, 58px)/.85 'DM Mono', monospace; font-style: normal; margin-bottom: 15px; }
+.content-heading h2 { font-size: clamp(18px, 1.7vw, 30px); line-height: 1; margin: 0 0 8px; white-space: nowrap; }
+.content-heading p { color: rgba(255,255,255,.75); font-size: clamp(7px, .48vw, 10px); line-height: 1.3; margin: 0; min-height: 28px; }
+.content-art { aspect-ratio: 143 / 264; background: #151515; overflow: hidden; }
+.content-art img { display: block; height: 100%; object-fit: cover; transition: transform .65s cubic-bezier(.22,1,.36,1), filter .65s ease; width: 100%; }
+.content-card > small { color: rgba(255,255,255,.57); display: block; font: 400 clamp(6px, .4vw, 8px)/1.4 'DM Mono', monospace; margin-top: 12px; text-align: center; }
+.content-card:hover .content-art img { filter: brightness(1.1); transform: scale(1.055); }
+.content-card:hover .content-heading h2, .content-card:hover .content-heading em { color: #fff; transform: translateX(4px); }
+.content-card .content-heading h2, .content-card .content-heading em { transition: color .4s ease, transform .5s cubic-bezier(.22,1,.36,1); }
+.page.is-visible .content-card { opacity: 1; transform: translateY(0); }
+.page.is-visible .content-card:nth-child(1) { transition-delay: .08s; }
+.page.is-visible .content-card:nth-child(2) { transition-delay: .16s; }
+.page.is-visible .content-card:nth-child(3) { transition-delay: .24s; }
+.page.is-visible .content-card:nth-child(4) { transition-delay: .32s; }
+.page.is-visible .content-card:nth-child(5) { transition-delay: .40s; }
+
+/* The Figma screens own their composition; the old site chrome must not sit on top of them. */
+.site-header, .scroll-hint, .progress-track { display: none; }
+
+.particle-zone { background: radial-gradient(ellipse at 52% 92%, rgba(195,201,202,.08), transparent 47%); bottom: 0; height: 52%; left: 0; overflow: hidden; pointer-events: auto; position: absolute; right: 0; }
+.particle-canvas { height: 100%; inset: 0; position: absolute; width: 100%; }
+.particle-tip { bottom: 32px; color: rgba(255,255,255,.46); font: 300 9px/1 'DM Mono', monospace; left: 50%; letter-spacing: .18em; opacity: 0; pointer-events: none; position: absolute; text-transform: uppercase; transform: translate(-50%, 8px); transition: opacity .5s ease, transform .5s var(--ease); }
+.particle-zone:hover .particle-tip { opacity: 1; transform: translate(-50%, 0); }
+.page[data-page="1"] .particle-zone { transition: opacity .16s linear; }
+.page[data-page="1"] .particle-zone { opacity: var(--cover-particle-opacity, 1); }
+.page[data-page="1"].cover-directory-bridged .page-inner {
+  transform: translate3d(0, var(--cover-bridge-lift, 0px), 0);
+  transition: none;
+  will-change: transform;
+}
+.page[data-page="1"].cover-directory-pinned .page-inner {
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: var(--cover-directory-pinned-top, 0px);
+  transform: none;
+  width: 100%;
+  z-index: 1;
+}
+/* Page 02 enters directly after the cover. Its existing sticky `top` still
+   places the unchanged Figma canvas at the reading centre once it arrives. */
+.page[data-page="2"] .page-inner {
+  margin-top: 0;
+  /* Directory entry is driven by normal scrolling and its own Figma-module
+     reveal. Do not add the generic page observer's extra upward nudge. */
+  transform: none;
+  transition: none;
+}
+.page[data-page="2"] .particle-zone { opacity: var(--directory-particle-opacity, 1); transition: opacity .16s linear; }
+
+/* The original Figma mask fields remain unchanged.  These full-page canvases
+   only extend their cursor response across the cover/directory compositions,
+   below all source layers so no typography, image or geometry is altered. */
+.page[data-page="1"] .cursor-particle-zone,
+.page[data-page="2"] .cursor-particle-zone,
+.page[data-page="28"] .cursor-particle-zone {
+  background: none;
+  bottom: auto;
+  filter: none;
+  height: 100%;
+  inset: 0;
+  -webkit-mask-image: none;
+  mask-image: none;
+  opacity: 1;
+  pointer-events: none;
+  top: 0;
+}
+.page[data-page="1"] .cursor-particle-zone { z-index: 2; }
+.page[data-page="2"] .cursor-particle-zone { z-index: 1; }
+.page[data-page="28"] .cursor-particle-zone { z-index: 1; }
+
+.scroll-hint { align-items: center; bottom: 25px; color: var(--muted); display: flex; font: 300 9px/1 'DM Mono', monospace; gap: 10px; left: 32px; letter-spacing: .16em; pointer-events: none; position: fixed; text-transform: uppercase; transition: opacity .35s ease; z-index: 10; }
+.scroll-hint i { border-bottom: 1px solid currentColor; border-right: 1px solid currentColor; height: 7px; transform: rotate(45deg) translateY(-2px); width: 7px; }
+.scroll-hint.is-hidden { opacity: 0; }
+.progress-track { background: rgba(255,255,255,.22); height: 1px; position: fixed; right: 32px; top: 50%; transform: rotate(90deg) translateX(50%); transform-origin: right center; width: 94px; z-index: 10; }
+.progress-track span { background: var(--ink); display: block; height: 100%; transform: scaleX(0); transform-origin: left; transition: transform .2s ease; }
+
+@media (max-width: 900px) {
+  .header-meta span:first-child { display: none; }
+  #page-links { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .site-header { padding: 18px 18px; }
+  .header-meta { gap: 12px; }
+  .menu-inner { margin-top: 86px; padding: 0 18px 40px; }
+  .page-link { font-size: 11px; }
+  .scroll-hint { bottom: 18px; left: 18px; }
+  .progress-track { right: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}

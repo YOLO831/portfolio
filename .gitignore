@@ -1,0 +1,9 @@
+# Local debug output and visual QA screenshots
+/*.png
+/tmp-*/
+/artifacts/
+/.learnings/
+
+# Local dependencies and logs
+node_modules/
+*.log

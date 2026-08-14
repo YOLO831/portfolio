@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<style>
+  body { margin: 0; padding: 24px; background: repeating-conic-gradient(#f5f5f5 0 25%, #cfd2d6 0 50%) 50% / 24px 24px; }
+  main { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 24px; align-items: start; }
+  figure { margin: 0; color: #111; font: 14px system-ui; background: #fff8; padding: 6px; }
+  img { display: block; max-width: 100%; height: auto; }
+</style>
+<main>
+  <figure><div id="original"></div><figcaption>Figma export as received</figcaption></figure>
+  <figure><div id="clean"></div><figcaption>same Figma paths, export wrappers removed</figcaption></figure>
+</main>
+<script>
+  fetch('./public/figma/page-02/native/text/2287.svg')
+    .then((response) => response.text())
+    .then((svg) => {
+      document.querySelector('#original').innerHTML = svg;
+      const documentCopy = new DOMParser().parseFromString(svg, 'image/svg+xml');
+      documentCopy.querySelectorAll('rect').forEach((rect) => {
+        const width = Number(rect.getAttribute('width'));
+        const height = Number(rect.getAttribute('height'));
+        const fill = (rect.getAttribute('fill') || '').toLowerCase();
+        if ((width === 609 && height === 1724 && fill === 'black') || (width === 222 && height === 30 && fill === '#1e1e1e')) rect.remove();
+      });
+      document.querySelector('#clean').innerHTML = new XMLSerializer().serializeToString(documentCopy.documentElement);
+    });
+</script>

@@ -1,0 +1,10 @@
+{
+  "name": "jin-taizhen-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jin Taizhen design portfolio website",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs"
+  }
+}
