@@ -467,6 +467,10 @@ let setLumenStage = () => {};
 let setJinxiangStage = () => {};
 let setTigerStage = () => {};
 let setOtherWorksStage = () => {};
+// Wired after the staged-page block so a completed cover can immediately
+// release the physical document scroll lock without waiting for the next
+// wheel event.
+let onCoverReady = () => {};
 
 // Keep the reading lock until the longest verified interaction preview has
 // completed, but do not leave a long inert pause after the final reveal.
@@ -501,7 +505,7 @@ function playCoverInteractionPreview(composition, stage) {
 // completed (last transition/animation end plus a short settle buffer). A
 // fixed timer races the reveal, which lets the page scroll while the cover
 // is still animating.
-const armCoverReady = (composition, page, ready, minDelay = coverPreviewCompleteDelay) => {
+const armCoverReady = (composition, page, ready, minDelay = coverPreviewCompleteDelay, fallbackDelay = 500) => {
   composition.__coverReadyCancel?.();
   const startedAt = performance.now();
   let done = false;
@@ -530,7 +534,7 @@ const armCoverReady = (composition, page, ready, minDelay = coverPreviewComplete
   // gets released early. It sits well past the longest known tail event, so
   // a repeat visit still releases from the real transition end instead of
   // waiting out this timer.
-  fallbackTimer = window.setTimeout(finish, minDelay + 2500);
+  fallbackTimer = window.setTimeout(finish, minDelay + fallbackDelay);
   composition.__coverReadyCancel = () => {
     window.clearTimeout(quietTimer);
     window.clearTimeout(fallbackTimer);
@@ -583,7 +587,8 @@ if (directoryPage && directoryComposition && !reduceMotion && !usePinnedReveal) 
     if (directoryStage === 9) armCoverReady(directoryComposition, directoryPage, () => {
       directoryComposition.dataset.revealReady = 'true';
       directoryPage.classList.add('chapter-complete');
-    }, 800);
+      onCoverReady();
+    }, 800, 2500);
   };
   const directoryIsInReadingZone = () => {
     const bounds = directoryPage.getBoundingClientRect();
@@ -632,6 +637,7 @@ if (novaPage && !reduceMotion && !usePinnedReveal) {
     if (novaStage === 4) armCoverReady(novaComposition, novaPage, () => {
       novaComposition.dataset.revealReady = 'true';
       novaPage.classList.add('chapter-complete');
+      onCoverReady();
     });
   };
 
@@ -683,6 +689,7 @@ if (lumenPage && lumenComposition && !reduceMotion && !usePinnedReveal) {
     if (lumenStage === 4) armCoverReady(lumenComposition, lumenPage, () => {
       lumenComposition.dataset.revealReady = 'true';
       lumenPage.classList.add('chapter-complete');
+      onCoverReady();
     });
   };
 
@@ -723,6 +730,7 @@ if (jinxiangPage && jinxiangComposition && !reduceMotion && !usePinnedReveal) {
     if (jinxiangStage === 4) armCoverReady(jinxiangComposition, jinxiangPage, () => {
       jinxiangComposition.dataset.revealReady = 'true';
       jinxiangPage.classList.add('chapter-complete');
+      onCoverReady();
     });
   };
   applyJinxiangStage();
@@ -759,6 +767,7 @@ if (tigerPage && tigerComposition && !reduceMotion && !usePinnedReveal) {
     if (tigerStage === 4) armCoverReady(tigerComposition, tigerPage, () => {
       tigerComposition.dataset.revealReady = 'true';
       tigerPage.classList.add('chapter-complete');
+      onCoverReady();
     });
   };
   applyTigerStage();
@@ -795,6 +804,7 @@ if (otherWorksPage && otherWorksComposition && !reduceMotion && !usePinnedReveal
     if (otherWorksStage === 4) armCoverReady(otherWorksComposition, otherWorksPage, () => {
       otherWorksComposition.dataset.revealReady = 'true';
       otherWorksPage.classList.add('chapter-complete');
+      onCoverReady();
     });
   };
   applyOtherWorksStage();
@@ -825,6 +835,53 @@ if (!reduceMotion && !usePinnedReveal) {
   const handoffTimers = new WeakMap();
   const handoffRuns = new WeakMap();
   const returnTimers = new WeakMap();
+  // Physical scroll lock: while an unfinished staged page sits at the reading
+  // centre, the document scroller itself is locked. Wheel preventDefault is
+  // the primary gate; this second gate stops input the browser handles at the
+  // compositor level (fast wheel bursts, trackpad momentum, app webviews)
+  // before the page listener ever runs.
+  const scrollLockTarget = document.scrollingElement || document.documentElement;
+  let scrollLockActive = false;
+  let lockPage = null;
+  const applyScrollLock = () => {
+    if (!scrollLockActive) {
+      scrollLockActive = true;
+      scrollLockTarget.style.overflow = 'hidden';
+    }
+  };
+  const releaseScrollLock = () => {
+    if (scrollLockActive) {
+      scrollLockActive = false;
+      scrollLockTarget.style.overflow = '';
+    }
+  };
+  const syncScrollLock = (lockStates, direction) => {
+    // Release when the held page completed or its frame clearly left the
+    // reading zone, so a settling frame can never keep the lock stuck.
+    if (lockPage) {
+      const held = lockStates.find((state) => state.lock.page === lockPage);
+      if (!held || !held.isUnfinished || Math.abs(held.frameOffset) > 120) {
+        lockPage = null;
+        releaseScrollLock();
+      }
+    }
+    const unfinishedAtCentre = lockStates.find((state) => state.isUnfinished && state.isAtReadingCentre);
+    // Deliberately wheeling up from an unfinished stage-0 cover leaves the
+    // reading zone: open the physical lock so the page can scroll up.
+    if (direction < 0 && unfinishedAtCentre && unfinishedAtCentre.stage === 0) {
+      lockPage = null;
+      releaseScrollLock();
+      return;
+    }
+    if (unfinishedAtCentre) {
+      lockPage = unfinishedAtCentre.lock.page;
+      applyScrollLock();
+    }
+  };
+  onCoverReady = () => {
+    lockPage = null;
+    releaseScrollLock();
+  };
   const readLockState = (lock) => {
     const frameBounds = lock.composition.getBoundingClientRect();
     const pageBounds = lock.page.getBoundingClientRect();
@@ -964,6 +1021,10 @@ if (!reduceMotion && !usePinnedReveal) {
     // Read every controlled page synchronously and let actual geometry choose
     // the active lock; no wheel distance or velocity is used here.
     const lockStates = scrollStageLocks.map(readLockState);
+    // Keep the physical lock engaged while an unfinished page is at the
+    // centre. Completion (onCoverReady) or a deliberate up-wheel from stage 0
+    // unlocks; a settling frame never flaps the lock.
+    syncScrollLock(lockStates, direction);
     // During the cover-to-content handoff the reserve height is intentionally
     // contracting, so its frame can briefly leave the centre band. Keep the
     // input consumed by the active handoff state instead of letting a fast
@@ -1018,6 +1079,18 @@ if (!reduceMotion && !usePinnedReveal) {
 
   }, { capture: true, passive: false });
 
+  // Safety net for input that scrolls without a wheel event (scrollbar drag,
+  // compositor prediction landing the frame at the centre): re-sync the
+  // physical lock from the live geometry on every scroll.
+  let scrollSyncQueued = false;
+  window.addEventListener('scroll', () => {
+    if (scrollSyncQueued) return;
+    scrollSyncQueued = true;
+    requestAnimationFrame(() => {
+      scrollSyncQueued = false;
+      syncScrollLock(scrollStageLocks.map(readLockState), 0);
+    });
+  }, { passive: true });
 }
 
 // Keep any future verified static covers centred without changing their

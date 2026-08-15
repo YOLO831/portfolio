@@ -11,8 +11,13 @@
 * { box-sizing: border-box; }
 /* Keep native wheel input synchronous so the page-state reading locks can
    consume it before a queued smooth-scroll animation carries a cover past. */
-html { background: var(--black); overflow-anchor: none; scroll-behavior: auto; }
-body { margin: 0; background: var(--black); color: var(--ink); font-family: Manrope, Arial, sans-serif; overflow-anchor: none; overflow-x: hidden; }
+html { background: var(--black); overflow-anchor: none; scroll-behavior: auto; scrollbar-gutter: stable; }
+/* `overflow-x: hidden` on body creates a scroll container that silently
+   disables `position: sticky` for every staged page, so covers could never
+   truly pin at the reading centre. `clip` prevents horizontal overflow the
+   same way without becoming a scroll container; keep `hidden` only as a
+   fallback for engines without `clip` support. */
+body { margin: 0; background: var(--black); color: var(--ink); font-family: Manrope, Arial, sans-serif; overflow-anchor: none; overflow-x: hidden; overflow-x: clip; }
 #site-background-particles { height: 100vh; inset: 0; pointer-events: none; position: fixed; width: 100vw; z-index: 0; }
 button, a { color: inherit; }
 button { font: inherit; }
