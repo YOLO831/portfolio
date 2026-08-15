@@ -844,6 +844,10 @@ if (!reduceMotion && !usePinnedReveal) {
   const scrollLockTarget = document.scrollingElement || document.documentElement;
   let scrollLockActive = false;
   let lockPage = null;
+  // The scroll listener re-syncs the physical lock after each scroll. It must
+  // never re-lock while the visitor is scrolling upward, otherwise the up-
+  // scroll releases the lock only for the scroll listener to re-apply it.
+  let lastWheelDirection = 0;
   const applyScrollLock = () => {
     if (!scrollLockActive) {
       scrollLockActive = true;
@@ -874,7 +878,7 @@ if (!reduceMotion && !usePinnedReveal) {
       releaseScrollLock();
       return;
     }
-    if (unfinishedAtCentre) {
+    if (unfinishedAtCentre && lastWheelDirection >= 0) {
       lockPage = unfinishedAtCentre.lock.page;
       applyScrollLock();
     }
@@ -1017,6 +1021,7 @@ if (!reduceMotion && !usePinnedReveal) {
         : event.deltaY;
     const direction = Math.sign(wheelDistance);
     if (!direction) return;
+    lastWheelDirection = direction;
 
     // IntersectionObserver updates asynchronously, so its nearby set can
     // briefly omit the page that a fast gesture has just brought to centre.
@@ -1068,13 +1073,11 @@ if (!reduceMotion && !usePinnedReveal) {
       const { lock, stage, revealReady, isUnfinished, isHandoffRunning } = centredState;
       const isCover = lock.page.dataset.page !== '2';
       // A finished cover keeps its reading reserve until the visitor actually
-      // scrolls: the release wheel lifts the following content page up on the
-      // compositor while the cover stays put, then the reserve collapses and
-      // the lift resets in one frame. This reveals the content by scrolling
-      // without ever pushing the cover up itself.
+      // scrolls. The release wheel collapses the reserve in the same frame and
+      // is not consumed, so the following content page rises with the scroll
+      // 1:1: the appearance is driven by the wheel, never by a scripted lift.
       if (direction > 0 && !isUnfinished && !lock.page.classList.contains('chapter-complete') && isCover) {
-        consumeWheel(event);
-        beginCoverHandoff(lock);
+        lock.page.classList.add('chapter-complete');
         return;
       }
       // The handoff consumes input while the lift is running so the page
