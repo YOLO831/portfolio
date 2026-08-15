@@ -636,7 +636,6 @@ if (novaPage && !reduceMotion && !usePinnedReveal) {
     applyNovaStage();
     if (novaStage === 4) armCoverReady(novaComposition, novaPage, () => {
       novaComposition.dataset.revealReady = 'true';
-      novaPage.classList.add('chapter-complete');
       onCoverReady();
     });
   };
@@ -688,7 +687,6 @@ if (lumenPage && lumenComposition && !reduceMotion && !usePinnedReveal) {
     applyLumenStage();
     if (lumenStage === 4) armCoverReady(lumenComposition, lumenPage, () => {
       lumenComposition.dataset.revealReady = 'true';
-      lumenPage.classList.add('chapter-complete');
       onCoverReady();
     });
   };
@@ -729,7 +727,6 @@ if (jinxiangPage && jinxiangComposition && !reduceMotion && !usePinnedReveal) {
     applyJinxiangStage();
     if (jinxiangStage === 4) armCoverReady(jinxiangComposition, jinxiangPage, () => {
       jinxiangComposition.dataset.revealReady = 'true';
-      jinxiangPage.classList.add('chapter-complete');
       onCoverReady();
     });
   };
@@ -766,7 +763,6 @@ if (tigerPage && tigerComposition && !reduceMotion && !usePinnedReveal) {
     applyTigerStage();
     if (tigerStage === 4) armCoverReady(tigerComposition, tigerPage, () => {
       tigerComposition.dataset.revealReady = 'true';
-      tigerPage.classList.add('chapter-complete');
       onCoverReady();
     });
   };
@@ -803,7 +799,6 @@ if (otherWorksPage && otherWorksComposition && !reduceMotion && !usePinnedReveal
     applyOtherWorksStage();
     if (otherWorksStage === 4) armCoverReady(otherWorksComposition, otherWorksPage, () => {
       otherWorksComposition.dataset.revealReady = 'true';
-      otherWorksPage.classList.add('chapter-complete');
       onCoverReady();
     });
   };
@@ -1065,6 +1060,15 @@ if (!reduceMotion && !usePinnedReveal) {
     // the currently centred chapter has finished its own stages or handoff.
     if (centredState) {
       const { lock, stage, revealReady, isUnfinished, isHandoffRunning } = centredState;
+      // A finished cover keeps its reading reserve until the visitor actually
+      // scrolls, so the following content page is revealed by scrolling rather
+      // than popping in when the cover animation completes. Collapsing the
+      // reserve here starts exactly at the release wheel; the event itself is
+      // not consumed, so the scroll brings the content up.
+      if (direction > 0 && !isUnfinished && !lock.page.classList.contains('chapter-complete') && lock.page.dataset.page !== '2') {
+        lock.page.classList.add('chapter-complete');
+        return;
+      }
       if (direction < 0 && stage > 0 && lock.page.classList.contains('chapter-complete') && lock.page.dataset.page !== '2') {
         consumeWheel(event);
         beginCoverReturn(centredState);
