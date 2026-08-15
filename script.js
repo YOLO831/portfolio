@@ -474,10 +474,17 @@ let setOtherWorksStage = () => {};
 // unlock exactly when the last staged layer has finished settling.
 const directoryRevealCompleteDelay = 1000;
 const coverPreviewStartDelay = 1000;
-const coverPreviewCompleteDelay = 1650;
+const coverPreviewCompleteDelay = 2200;
 
 function playCoverInteractionPreview(composition, stage) {
-  if (stage !== 4 || composition.dataset.interactionPreviewPlayed === 'true') return;
+  // A cover that leaves stage 4 (scrolling back up) may play its interaction
+  // preview again on the next arrival. Without this, repeat visits show the
+  // interactive layers with no auto-play and the release logic over-waits.
+  if (stage < 4) {
+    delete composition.dataset.interactionPreviewPlayed;
+    return;
+  }
+  if (composition.dataset.interactionPreviewPlayed === 'true') return;
   composition.dataset.interactionPreviewPlayed = 'true';
   window.setTimeout(() => {
     composition.classList.add('cover-preview-expanded');
@@ -489,6 +496,48 @@ function playCoverInteractionPreview(composition, stage) {
     });
   }, coverPreviewStartDelay);
 }
+
+// Release a project cover's scroll lock only after its animations have truly
+// completed (last transition/animation end plus a short settle buffer). A
+// fixed timer races the reveal, which lets the page scroll while the cover
+// is still animating.
+const armCoverReady = (composition, page, ready, minDelay = coverPreviewCompleteDelay) => {
+  composition.__coverReadyCancel?.();
+  const startedAt = performance.now();
+  let done = false;
+  let quietTimer = 0;
+  let fallbackTimer = 0;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    window.clearTimeout(quietTimer);
+    window.clearTimeout(fallbackTimer);
+    composition.removeEventListener('transitionend', onAnimationEnd);
+    composition.removeEventListener('animationend', onAnimationEnd);
+    composition.__coverReadyCancel = null;
+    ready();
+  };
+  const onAnimationEnd = () => {
+    // Ignore the early staggered batches; only the tail of the reveal counts.
+    if (performance.now() - startedAt < minDelay) return;
+    window.clearTimeout(quietTimer);
+    quietTimer = window.setTimeout(finish, 350);
+  };
+  composition.addEventListener('transitionend', onAnimationEnd);
+  composition.addEventListener('animationend', onAnimationEnd);
+  // The fallback is only a safety net; the release must be driven by the
+  // final staged-layer transition, otherwise a reveal longer than the floor
+  // gets released early. It sits well past the longest known tail event, so
+  // a repeat visit still releases from the real transition end instead of
+  // waiting out this timer.
+  fallbackTimer = window.setTimeout(finish, minDelay + 2500);
+  composition.__coverReadyCancel = () => {
+    window.clearTimeout(quietTimer);
+    window.clearTimeout(fallbackTimer);
+    composition.removeEventListener('transitionend', onAnimationEnd);
+    composition.removeEventListener('animationend', onAnimationEnd);
+  };
+};
 
 const directoryPage = document.querySelector('#page-2');
 const directoryComposition = directoryPage?.querySelector('.figma-directory-2x');
@@ -531,10 +580,10 @@ if (directoryPage && directoryComposition && !reduceMotion && !usePinnedReveal) 
     directoryPage.classList.remove('chapter-ready', 'chapter-handoff', 'chapter-complete');
     window.clearTimeout(directoryReadyTimer);
     applyDirectoryStage();
-    if (directoryStage === 9) directoryReadyTimer = window.setTimeout(() => {
+    if (directoryStage === 9) armCoverReady(directoryComposition, directoryPage, () => {
       directoryComposition.dataset.revealReady = 'true';
-      directoryPage.classList.add('chapter-ready');
-    }, directoryRevealCompleteDelay);
+      directoryPage.classList.add('chapter-complete');
+    }, 800);
   };
   const directoryIsInReadingZone = () => {
     const bounds = directoryPage.getBoundingClientRect();
@@ -580,10 +629,10 @@ if (novaPage && !reduceMotion && !usePinnedReveal) {
     novaPage.classList.remove('chapter-ready', 'chapter-handoff', 'chapter-complete');
     window.clearTimeout(novaReadyTimer);
     applyNovaStage();
-    if (novaStage === 4) novaReadyTimer = window.setTimeout(() => {
+    if (novaStage === 4) armCoverReady(novaComposition, novaPage, () => {
       novaComposition.dataset.revealReady = 'true';
-      novaPage.classList.add('chapter-ready');
-    }, coverPreviewCompleteDelay);
+      novaPage.classList.add('chapter-complete');
+    });
   };
 
   applyNovaStage();
@@ -631,10 +680,10 @@ if (lumenPage && lumenComposition && !reduceMotion && !usePinnedReveal) {
     lumenPage.classList.remove('chapter-ready', 'chapter-handoff', 'chapter-complete');
     window.clearTimeout(lumenReadyTimer);
     applyLumenStage();
-    if (lumenStage === 4) lumenReadyTimer = window.setTimeout(() => {
+    if (lumenStage === 4) armCoverReady(lumenComposition, lumenPage, () => {
       lumenComposition.dataset.revealReady = 'true';
-      lumenPage.classList.add('chapter-ready');
-    }, coverPreviewCompleteDelay);
+      lumenPage.classList.add('chapter-complete');
+    });
   };
 
   applyLumenStage();
@@ -671,10 +720,10 @@ if (jinxiangPage && jinxiangComposition && !reduceMotion && !usePinnedReveal) {
     jinxiangPage.classList.remove('chapter-ready', 'chapter-handoff', 'chapter-complete');
     window.clearTimeout(jinxiangReadyTimer);
     applyJinxiangStage();
-    if (jinxiangStage === 4) jinxiangReadyTimer = window.setTimeout(() => {
+    if (jinxiangStage === 4) armCoverReady(jinxiangComposition, jinxiangPage, () => {
       jinxiangComposition.dataset.revealReady = 'true';
-      jinxiangPage.classList.add('chapter-ready');
-    }, coverPreviewCompleteDelay);
+      jinxiangPage.classList.add('chapter-complete');
+    });
   };
   applyJinxiangStage();
   window.addEventListener('scroll', () => { if (jinxiangAligning && Math.abs(jinxiangCenterOffset()) <= 8) jinxiangAligning = false; }, { passive: true });
@@ -707,10 +756,10 @@ if (tigerPage && tigerComposition && !reduceMotion && !usePinnedReveal) {
     tigerPage.classList.remove('chapter-ready', 'chapter-handoff', 'chapter-complete');
     window.clearTimeout(tigerReadyTimer);
     applyTigerStage();
-    if (tigerStage === 4) tigerReadyTimer = window.setTimeout(() => {
+    if (tigerStage === 4) armCoverReady(tigerComposition, tigerPage, () => {
       tigerComposition.dataset.revealReady = 'true';
-      tigerPage.classList.add('chapter-ready');
-    }, coverPreviewCompleteDelay);
+      tigerPage.classList.add('chapter-complete');
+    });
   };
   applyTigerStage();
   window.addEventListener('scroll', () => { if (tigerAligning && Math.abs(tigerCenterOffset()) <= 8) tigerAligning = false; }, { passive: true });
@@ -743,10 +792,10 @@ if (otherWorksPage && otherWorksComposition && !reduceMotion && !usePinnedReveal
     otherWorksPage.classList.remove('chapter-ready', 'chapter-handoff', 'chapter-complete');
     window.clearTimeout(otherWorksReadyTimer);
     applyOtherWorksStage();
-    if (otherWorksStage === 4) otherWorksReadyTimer = window.setTimeout(() => {
+    if (otherWorksStage === 4) armCoverReady(otherWorksComposition, otherWorksPage, () => {
       otherWorksComposition.dataset.revealReady = 'true';
-      otherWorksPage.classList.add('chapter-ready');
-    }, coverPreviewCompleteDelay);
+      otherWorksPage.classList.add('chapter-complete');
+    });
   };
   applyOtherWorksStage();
   window.addEventListener('scroll', () => { if (otherWorksAligning && Math.abs(otherWorksCenterOffset()) <= 8) otherWorksAligning = false; }, { passive: true });
@@ -822,40 +871,68 @@ if (!reduceMotion && !usePinnedReveal) {
     window.setTimeout(() => { wheelLock.locked = false; }, 220);
   };
   const beginCoverHandoff = (lock) => {
-    const handoffDuration = lock.page.dataset.page === '2' ? 900 : 900;
+    const handoffDuration = 900;
     handoffRuns.get(lock.page)?.cancel();
     lock.composition.dataset.revealReady = 'false';
     lock.page.classList.remove('chapter-ready', 'chapter-complete');
     lock.page.classList.add('chapter-handoff');
     window.clearTimeout(handoffTimers.get(lock.page));
+    // Compositor handoff: keep the reserve in place while the next page
+    // glides up by the collapse distance via transform, then collapse the
+    // reserve and reset the transform in the same frame. This avoids the
+    // layout reflow jank of animating `::after` height every frame.
+    const nextPage = document.querySelector(`#page-${Number(lock.page.dataset.page) + 1}`);
+    const reserveHeight = Number.parseFloat(getComputedStyle(lock.page, '::after').height);
+    const pageHeight = lock.page.getBoundingClientRect().height;
+    const pageMinHeight = Number.parseFloat(getComputedStyle(lock.page).minHeight) || 0;
+    // The reserve is the layout difference between the page's current height
+    // and its minimum handoff height, not the raw 120vh: margins and min-height
+    // make those differ, and using the wrong value causes a visible jump when
+    // the reserve collapses and the lift resets.
+    const liftDistance = Math.max(0, Math.min(
+      Number.isFinite(reserveHeight) && reserveHeight > 0 ? reserveHeight : window.innerHeight * 1.2,
+      pageHeight - pageMinHeight
+    ));
     let finished = false;
     let fallbackTimer = 0;
+    const cleanupLift = () => {
+      if (!nextPage) return;
+      nextPage.style.transition = 'none';
+      nextPage.style.transform = '';
+      nextPage.style.willChange = '';
+    };
     const finishHandoff = () => {
       if (finished) return;
       finished = true;
       window.clearTimeout(fallbackTimer);
-      lock.page.removeEventListener('transitionend', onReserveHeightEnd);
+      nextPage?.removeEventListener('transitionend', onLiftEnd);
       lock.page.classList.remove('chapter-handoff');
       lock.page.classList.add('chapter-complete');
       lock.composition.dataset.revealReady = 'true';
+      // Collapsing the reserve (layout) and resetting the lift (transform)
+      // in one frame cancel out, so the next page never jumps.
+      cleanupLift();
     };
-    const onReserveHeightEnd = (event) => {
-      if (event.target === lock.page && event.pseudoElement === '::after' && event.propertyName === 'height') finishHandoff();
+    const onLiftEnd = (event) => {
+      if (event.target === nextPage && event.propertyName === 'transform') finishHandoff();
     };
     const run = {
       cancel: () => {
         if (finished) return;
         finished = true;
         window.clearTimeout(fallbackTimer);
-        lock.page.removeEventListener('transitionend', onReserveHeightEnd);
+        nextPage?.removeEventListener('transitionend', onLiftEnd);
+        cleanupLift();
       },
     };
     handoffRuns.set(lock.page, run);
 
-    // The following body remains in normal flow. The only animated geometry
-    // is the cover's empty reserve, so a completed cover cannot be painted
-    // over by its body page. Finish from the real pseudo-element transition.
-    lock.page.addEventListener('transitionend', onReserveHeightEnd);
+    if (nextPage && liftDistance > 0) {
+      nextPage.style.transition = 'transform .9s cubic-bezier(.4, 0, .2, 1)';
+      nextPage.style.willChange = 'transform';
+      nextPage.style.transform = `translateY(${-liftDistance}px)`;
+      nextPage.addEventListener('transitionend', onLiftEnd);
+    }
     fallbackTimer = window.setTimeout(finishHandoff, handoffDuration + 220);
     handoffTimers.set(lock.page, fallbackTimer);
   };
@@ -889,33 +966,35 @@ if (!reduceMotion && !usePinnedReveal) {
     // contracting, so its frame can briefly leave the centre band. Keep the
     // input consumed by the active handoff state instead of letting a fast
     // wheel step leak through to the following page.
-    const handoffState = lockStates.find(({ isHandoffRunning }) => isHandoffRunning);
-    if (handoffState) {
+    // A completed cover hands off without locking input: the reserve shrinks
+    // behind the scroll, so the visitor is released as soon as the animation
+    // has settled. Only an active upward return still consumes input.
+    const returningState = lockStates.find((state) => state.lock.page.classList.contains('chapter-returning'));
+    if (returningState) {
       consumeWheel(event);
       return;
     }
-    // Hard-input guard: a single large wheel step can carry an unfinished
-    // cover past its reading centre and beyond the sticky hold before the
-    // position gate observes it. Predict the overshoot from the frame's
-    // current offset plus the event distance, then spend the event on a
-    // reveal stage so no fast gesture can skip a cover.
+    // Fast-input safety net: a single wheel step can carry an unfinished cover
+    // past its reading centre and beyond the sticky hold before the position
+    // gate observes the new position. Consume only that overshooting step; it
+    // is not spent on a reveal stage, so the cover animation is never skipped.
     const stickyTop = window.innerHeight / 2 - window.innerWidth * 0.176628;
     const overshootCover = lockStates
       .filter((state) => {
         if (!state.isUnfinished || state.frameOffset <= 48 || wheelDistance <= 0) return false;
-        const frameHeight = state.lock.composition.getBoundingClientRect().height;
-        const pinOffset = stickyTop + frameHeight / 2 - window.innerHeight / 2;
-        const stickyHold = window.innerHeight * 1.2;
+        const frameBounds = state.lock.composition.getBoundingClientRect();
+        const pageHeight = state.lock.page.getBoundingClientRect().height;
+        const pinOffset = stickyTop + frameBounds.height / 2 - window.innerHeight / 2;
+        const stickyHold = pageHeight - frameBounds.height - stickyTop;
         return wheelDistance > (state.frameOffset - pinOffset) + stickyHold;
       })
       .sort((a, b) => a.frameOffset - b.frameOffset)[0];
     if (overshootCover) {
       consumeWheel(event);
-      advanceStage(overshootCover, 1);
       return;
     }
     const centredState = lockStates
-      .filter((state) => (state.isActive && state.isAtReadingCentre) || (state.isUnfinished && readingEntered.get(state.lock.page) === true))
+      .filter((state) => (state.isActive && state.isAtReadingCentre) || (state.isUnfinished && readingEntered.get(state.lock.page) === true && Math.abs(state.frameOffset) <= window.innerHeight))
       .sort((a, b) => Math.abs(a.frameOffset) - Math.abs(b.frameOffset))[0];
 
     // The page already at the reading position always wins over a later cover.
@@ -923,17 +1002,12 @@ if (!reduceMotion && !usePinnedReveal) {
     // the currently centred chapter has finished its own stages or handoff.
     if (centredState) {
       const { lock, stage, revealReady, isUnfinished, isHandoffRunning } = centredState;
-      if (direction > 0 && stage === lock.total && revealReady && lock.page.classList.contains('chapter-ready')) {
-        consumeWheel(event);
-        beginCoverHandoff(lock);
-        return;
-      }
       if (direction < 0 && stage > 0 && lock.page.classList.contains('chapter-complete') && lock.page.dataset.page !== '2') {
         consumeWheel(event);
         beginCoverReturn(centredState);
         return;
       }
-      if ((direction > 0 && isUnfinished) || (direction < 0 && stage > 0)) {
+      if ((direction > 0 && isUnfinished && !isHandoffRunning) || (direction < 0 && stage > 0 && !isHandoffRunning)) {
         consumeWheel(event);
         advanceStage(centredState, direction);
         return;
@@ -947,7 +1021,11 @@ if (!reduceMotion && !usePinnedReveal) {
       const state = readLockState(lock);
       if (state.isUnfinished && state.frameOffset <= 48) {
         readingEntered.set(lock.page, true);
-      } else if (!state.isUnfinished || state.frameOffset > 48) {
+      } else if (!state.isUnfinished || state.frameOffset > window.innerHeight) {
+        // Stay latched once the cover has reached the reading centre. Only a
+        // completed cover or one still a full viewport below (visitor scrolled
+        // well above it) releases the lock; small async position jitter must
+        // never clear it while the cover is at the middle.
         readingEntered.set(lock.page, false);
       }
     }
