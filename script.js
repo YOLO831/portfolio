@@ -272,7 +272,7 @@ pages.forEach(({ number, src }) => {
           ? createFigmaOtherWorksCover()
         : number === 28
           ? createFigmaEnd()
-      : `<img class="page-image" src="${number >= 3 && number <= 27 ? `./public/pages/${String(number).padStart(2, '0')}@2x.png` : src}" alt="作品集第 ${number} 页" loading="${number < 3 || number === 28 ? 'eager' : 'lazy'}" decoding="async" />${createParticleZone(number)}${createCursorParticleZone(number)}`;
+      : `<img class="page-image" src="${number >= 3 && number <= 27 ? `./public/pages/${String(number).padStart(2, '0')}@2x.webp` : src}" alt="作品集第 ${number} 页" loading="${number < 3 || number === 28 ? 'eager' : 'lazy'}" decoding="async" />${createParticleZone(number)}${createCursorParticleZone(number)}`;
   page.innerHTML = `<div class="page-inner">${content}<span class="page-caption">PAGE ${String(number).padStart(2, '0')} / JIN TAIZHEN</span></div>`;
   portfolio.appendChild(page);
 
@@ -286,6 +286,28 @@ pages.forEach(({ number, src }) => {
 
 const pageElements = [...document.querySelectorAll('.page')];
 const links = [...document.querySelectorAll('.page-link')];
+
+// Preload the next raster content page once the current page is visible, so
+// scrolling into it never waits on a WebP download. Covers and the ending
+// page are layer-built and carry no `page-image`, so they are skipped.
+const preloadedPageImages = new Set();
+const nextContentImageSrc = (page) => {
+  const next = Number(page.dataset.page) + 1;
+  if (next < 3 || next > 27) return null;
+  if ([3, 8, 13, 18, 23].includes(next)) return null;
+  return `./public/pages/${String(next).padStart(2, '0')}@2x.webp`;
+};
+const pageImagePreloader = new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+    const src = nextContentImageSrc(entry.target);
+    if (!src || preloadedPageImages.has(src)) continue;
+    preloadedPageImages.add(src);
+    const preload = new Image();
+    preload.src = src;
+  }
+}, { threshold: 0.1 });
+pageElements.forEach((page) => pageImagePreloader.observe(page));
 
 // A fresh visit always opens on the cover. Do not restore a stale #page-N hash
 // left in the preview URL, otherwise the browser appears to skip the opening.
@@ -332,13 +354,16 @@ if (coverPage) {
 
   // The opening holds only while its own animation is running.  It never
   // repositions the document or interprets wheel distance after release.
+  // The guard is the first viewport, not `scrollY <= 1`: a reload can restore
+  // a slightly scrolled position, which would otherwise disable the lock
+  // while the cover is still animating.
   window.addEventListener('wheel', (event) => {
-    if (!coverIntroReady && event.deltaY > 0 && window.scrollY <= 1) event.preventDefault();
+    if (!coverIntroReady && event.deltaY > 0 && window.scrollY < window.innerHeight) event.preventDefault();
   }, { capture: true, passive: false });
 
   window.addEventListener('keydown', (event) => {
     const downKeys = ['ArrowDown', 'PageDown', ' ', 'Spacebar', 'End'];
-    if (!coverIntroReady && window.scrollY <= 1 && downKeys.includes(event.key)) {
+    if (!coverIntroReady && window.scrollY < window.innerHeight && downKeys.includes(event.key)) {
       event.preventDefault();
       event.stopImmediatePropagation();
     }
@@ -521,37 +546,6 @@ if (directoryPage && directoryComposition && !reduceMotion && !usePinnedReveal) 
     return bounds.top + bounds.height / 2 - window.innerHeight / 2;
   };
   applyDirectoryStage();
-  window.addEventListener('legacywheel', (event) => {
-    const direction = Math.sign(event.deltaY);
-    const offset = directoryCenterOffset();
-    const bounds = directoryPage.getBoundingClientRect();
-
-    // The page scrolls freely until the directory is already close to the
-    // reading position. The final short approach is eased into centre first.
-    const wouldCrossDirectoryCentre = offset > 8 && event.deltaY >= offset;
-    if (direction > 0 && directoryStage < 9 && (directoryIsInReadingZone() || wouldCrossDirectoryCentre) && Math.abs(offset) > 8) {
-      event.preventDefault();
-      window.scrollTo({ top: window.scrollY + offset, behavior: 'smooth' });
-      return;
-    }
-
-    // Do not let a high-momentum gesture carry an unfinished directory past
-    // its reading position; hold it at centre until all nine stages land.
-    if (Math.abs(offset) > 8) return;
-    const isHoldingDirectory = (direction > 0 && directoryStage < 9)
-      || (direction < 0 && directoryStage > 0);
-    if (!isHoldingDirectory) return;
-
-    // Hold every wheel event during the staged reveal, including the brief debounce.
-    // This prevents momentum/trackpad input from leaking to the next page.
-    event.preventDefault();
-    if (directoryWheelLock) return;
-
-    directoryStage += direction;
-    applyDirectoryStage();
-    directoryWheelLock = true;
-    window.setTimeout(() => { directoryWheelLock = false; }, 220);
-  }, { passive: false, capture: true });
 }
 
 const novaPage = document.querySelector('#page-3');
@@ -593,41 +587,6 @@ if (novaPage && !reduceMotion && !usePinnedReveal) {
   };
 
   applyNovaStage();
-  window.addEventListener('legacywheel', (event) => {
-    const direction = Math.sign(event.deltaY);
-    const offset = novaCenterOffset();
-
-    // The cover has been captured: consume all momentum until the single
-    // alignment animation reaches the reading centre.
-    if (novaAligning) {
-      event.preventDefault();
-      return;
-    }
-
-    // The user scrolls normally. We intervene only once that input would
-    // cross the centre (or the cover is already within the small settle
-    // zone), then ease the final distance into the reading position.
-    const wouldCrossCentre = offset > 8 && event.deltaY >= offset;
-    const shouldSettle = offset > 8 && (novaIsNearReadingZone() || wouldCrossCentre);
-    if (direction > 0 && novaStage < 4 && shouldSettle && novaCanSettleAtReadingZone()) {
-      event.preventDefault();
-      novaAligning = true;
-      window.scrollTo({ top: window.scrollY + offset, behavior: 'smooth' });
-      return;
-    }
-
-    if (Math.abs(offset) > 8) return;
-    const isHoldingNOVA = (direction > 0 && novaStage < 4)
-      || (direction < 0 && novaStage > 0);
-    if (!isHoldingNOVA) return;
-
-    event.preventDefault();
-    if (novaWheelLock) return;
-    novaStage += direction;
-    applyNovaStage();
-    novaWheelLock = true;
-    window.setTimeout(() => { novaWheelLock = false; }, 220);
-  }, { passive: false, capture: true });
 
   window.addEventListener('scroll', () => {
     if (novaAligning && Math.abs(novaCenterOffset()) <= 8) novaAligning = false;
@@ -679,35 +638,6 @@ if (lumenPage && lumenComposition && !reduceMotion && !usePinnedReveal) {
   };
 
   applyLumenStage();
-  window.addEventListener('legacywheel', (event) => {
-    const direction = Math.sign(event.deltaY);
-    const offset = lumenCenterOffset();
-    if (lumenAligning) {
-      event.preventDefault();
-      return;
-    }
-
-    const wouldCrossCentre = offset > 8 && event.deltaY >= offset;
-    const shouldSettle = offset > 8 && (lumenIsNearReadingZone() || wouldCrossCentre);
-    if (direction > 0 && lumenStage < 4 && shouldSettle && lumenCanSettleAtReadingZone()) {
-      event.preventDefault();
-      lumenAligning = true;
-      window.scrollTo({ top: window.scrollY + offset, behavior: 'smooth' });
-      return;
-    }
-
-    if (Math.abs(offset) > 8) return;
-    const isHoldingLumen = (direction > 0 && lumenStage < 4)
-      || (direction < 0 && lumenStage > 0);
-    if (!isHoldingLumen) return;
-
-    event.preventDefault();
-    if (lumenWheelLock) return;
-    lumenStage += direction;
-    applyLumenStage();
-    lumenWheelLock = true;
-    window.setTimeout(() => { lumenWheelLock = false; }, 220);
-  }, { passive: false, capture: true });
 
   window.addEventListener('scroll', () => {
     if (lumenAligning && Math.abs(lumenCenterOffset()) <= 8) lumenAligning = false;
@@ -747,26 +677,6 @@ if (jinxiangPage && jinxiangComposition && !reduceMotion && !usePinnedReveal) {
     }, coverPreviewCompleteDelay);
   };
   applyJinxiangStage();
-  window.addEventListener('legacywheel', (event) => {
-    const direction = Math.sign(event.deltaY);
-    const offset = jinxiangCenterOffset();
-    const bounds = jinxiangPage.getBoundingClientRect();
-    if (jinxiangAligning) { event.preventDefault(); return; }
-    const shouldSettle = offset > 8 && (jinxiangIsNearReadingZone() || event.deltaY >= offset);
-    if (direction > 0 && jinxiangStage < 4 && shouldSettle && bounds.top < window.innerHeight && bounds.bottom > window.innerHeight / 2) {
-      event.preventDefault();
-      jinxiangAligning = true;
-      window.scrollTo({ top: window.scrollY + offset, behavior: 'smooth' });
-      return;
-    }
-    if (Math.abs(offset) > 8 || !((direction > 0 && jinxiangStage < 4) || (direction < 0 && jinxiangStage > 0))) return;
-    event.preventDefault();
-    if (jinxiangWheelLock) return;
-    jinxiangStage += direction;
-    applyJinxiangStage();
-    jinxiangWheelLock = true;
-    window.setTimeout(() => { jinxiangWheelLock = false; }, 220);
-  }, { passive: false, capture: true });
   window.addEventListener('scroll', () => { if (jinxiangAligning && Math.abs(jinxiangCenterOffset()) <= 8) jinxiangAligning = false; }, { passive: true });
 }
 
@@ -803,26 +713,6 @@ if (tigerPage && tigerComposition && !reduceMotion && !usePinnedReveal) {
     }, coverPreviewCompleteDelay);
   };
   applyTigerStage();
-  window.addEventListener('legacywheel', (event) => {
-    const direction = Math.sign(event.deltaY);
-    const offset = tigerCenterOffset();
-    const bounds = tigerPage.getBoundingClientRect();
-    if (tigerAligning) { event.preventDefault(); return; }
-    const shouldSettle = offset > 8 && (tigerIsNearReadingZone() || event.deltaY >= offset);
-    if (direction > 0 && tigerStage < 4 && shouldSettle && bounds.top < window.innerHeight && bounds.bottom > window.innerHeight / 2) {
-      event.preventDefault();
-      tigerAligning = true;
-      window.scrollTo({ top: window.scrollY + offset, behavior: 'smooth' });
-      return;
-    }
-    if (Math.abs(offset) > 8 || !((direction > 0 && tigerStage < 4) || (direction < 0 && tigerStage > 0))) return;
-    event.preventDefault();
-    if (tigerWheelLock) return;
-    tigerStage += direction;
-    applyTigerStage();
-    tigerWheelLock = true;
-    window.setTimeout(() => { tigerWheelLock = false; }, 220);
-  }, { passive: false, capture: true });
   window.addEventListener('scroll', () => { if (tigerAligning && Math.abs(tigerCenterOffset()) <= 8) tigerAligning = false; }, { passive: true });
 }
 
@@ -859,26 +749,6 @@ if (otherWorksPage && otherWorksComposition && !reduceMotion && !usePinnedReveal
     }, coverPreviewCompleteDelay);
   };
   applyOtherWorksStage();
-  window.addEventListener('legacywheel', (event) => {
-    const direction = Math.sign(event.deltaY);
-    const offset = otherWorksCenterOffset();
-    const bounds = otherWorksPage.getBoundingClientRect();
-    if (otherWorksAligning) { event.preventDefault(); return; }
-    const shouldSettle = offset > 8 && (otherWorksIsNearReadingZone() || event.deltaY >= offset);
-    if (direction > 0 && otherWorksStage < 4 && shouldSettle && bounds.top < window.innerHeight && bounds.bottom > window.innerHeight / 2) {
-      event.preventDefault();
-      otherWorksAligning = true;
-      window.scrollTo({ top: window.scrollY + offset, behavior: 'smooth' });
-      return;
-    }
-    if (Math.abs(offset) > 8 || !((direction > 0 && otherWorksStage < 4) || (direction < 0 && otherWorksStage > 0))) return;
-    event.preventDefault();
-    if (otherWorksWheelLock) return;
-    otherWorksStage += direction;
-    applyOtherWorksStage();
-    otherWorksWheelLock = true;
-    window.setTimeout(() => { otherWorksWheelLock = false; }, 220);
-  }, { passive: false, capture: true });
   window.addEventListener('scroll', () => { if (otherWorksAligning && Math.abs(otherWorksCenterOffset()) <= 8) otherWorksAligning = false; }, { passive: true });
 }
 
@@ -906,6 +776,11 @@ if (!reduceMotion && !usePinnedReveal) {
   const handoffTimers = new WeakMap();
   const handoffRuns = new WeakMap();
   const returnTimers = new WeakMap();
+  // A fast momentum step can cross the reading centre between wheel events,
+  // leaving an unfinished cover beyond the sticky range and outside the
+  // centre band. Once its frame has reached or passed the reading centre,
+  // keep consuming input until it completes or the visitor returns above it.
+  const readingEntered = new WeakMap();
   const readLockState = (lock) => {
     const frameBounds = lock.composition.getBoundingClientRect();
     const pageBounds = lock.page.getBoundingClientRect();
@@ -1019,8 +894,28 @@ if (!reduceMotion && !usePinnedReveal) {
       consumeWheel(event);
       return;
     }
+    // Hard-input guard: a single large wheel step can carry an unfinished
+    // cover past its reading centre and beyond the sticky hold before the
+    // position gate observes it. Predict the overshoot from the frame's
+    // current offset plus the event distance, then spend the event on a
+    // reveal stage so no fast gesture can skip a cover.
+    const stickyTop = window.innerHeight / 2 - window.innerWidth * 0.176628;
+    const overshootCover = lockStates
+      .filter((state) => {
+        if (!state.isUnfinished || state.frameOffset <= 48 || wheelDistance <= 0) return false;
+        const frameHeight = state.lock.composition.getBoundingClientRect().height;
+        const pinOffset = stickyTop + frameHeight / 2 - window.innerHeight / 2;
+        const stickyHold = window.innerHeight * 1.2;
+        return wheelDistance > (state.frameOffset - pinOffset) + stickyHold;
+      })
+      .sort((a, b) => a.frameOffset - b.frameOffset)[0];
+    if (overshootCover) {
+      consumeWheel(event);
+      advanceStage(overshootCover, 1);
+      return;
+    }
     const centredState = lockStates
-      .filter(({ isActive, isAtReadingCentre }) => isActive && isAtReadingCentre)
+      .filter((state) => (state.isActive && state.isAtReadingCentre) || (state.isUnfinished && readingEntered.get(state.lock.page) === true))
       .sort((a, b) => Math.abs(a.frameOffset) - Math.abs(b.frameOffset))[0];
 
     // The page already at the reading position always wins over a later cover.
@@ -1047,72 +942,22 @@ if (!reduceMotion && !usePinnedReveal) {
 
   }, { capture: true, passive: false });
 
+  const updateReadingLatch = () => {
+    for (const lock of scrollStageLocks) {
+      const state = readLockState(lock);
+      if (state.isUnfinished && state.frameOffset <= 48) {
+        readingEntered.set(lock.page, true);
+      } else if (!state.isUnfinished || state.frameOffset > 48) {
+        readingEntered.set(lock.page, false);
+      }
+    }
+  };
+  window.addEventListener('scroll', updateReadingLatch, { passive: true });
+
 }
 
 // Keep any future verified static covers centred without changing their
 // Figma artwork. The current five project covers are layer-built.
-const staticCoverPages = []
-  .map((number) => document.querySelector(`#page-${number}`))
-  .filter(Boolean);
-
-staticCoverPages.forEach((coverPage) => {
-  let aligning = false;
-  let hasPausedAtCentre = false;
-
-  const centreOffset = () => {
-    const bounds = coverPage.getBoundingClientRect();
-    return bounds.top + bounds.height / 2 - window.innerHeight / 2;
-  };
-
-  const isNearReadingZone = () => {
-    const bounds = coverPage.getBoundingClientRect();
-    const centre = bounds.top + bounds.height / 2;
-    return Math.abs(centre - window.innerHeight / 2) <= Math.max(180, bounds.height * .28);
-  };
-
-  const canSettleAtReadingZone = () => {
-    const bounds = coverPage.getBoundingClientRect();
-    return bounds.top < window.innerHeight && bounds.bottom > window.innerHeight / 2;
-  };
-
-  window.addEventListener('legacywheel', (event) => {
-    const direction = Math.sign(event.deltaY);
-    const offset = centreOffset();
-
-    if (aligning) {
-      event.preventDefault();
-      return;
-    }
-
-    // Let the visitor scroll naturally until this cover approaches the
-    // reading position, then ease only the remaining distance to centre.
-    const wouldCrossCentre = offset > 8 && event.deltaY >= offset;
-    const shouldSettle = offset > 8 && (isNearReadingZone() || wouldCrossCentre);
-    if (direction > 0 && !hasPausedAtCentre && shouldSettle && canSettleAtReadingZone()) {
-      event.preventDefault();
-      aligning = true;
-      window.scrollTo({ top: window.scrollY + offset, behavior: 'smooth' });
-      return;
-    }
-
-    // Consume the first wheel gesture at the reading position. This is the
-    // static-cover equivalent of a reveal stage: it absorbs momentum without
-    // applying any visual effect to the Figma artwork. The next gesture moves
-    // to the following page normally.
-    if (direction > 0 && !hasPausedAtCentre && Math.abs(offset) <= 8) {
-      event.preventDefault();
-      hasPausedAtCentre = true;
-    }
-  }, { passive: false });
-
-  window.addEventListener('scroll', () => {
-    if (aligning && Math.abs(centreOffset()) <= 8) aligning = false;
-  }, { passive: true });
-});
-
-
-
-
 const currentObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     if (entry.isIntersecting) setCurrentPage(Number(entry.target.dataset.page));
