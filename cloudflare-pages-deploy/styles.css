@@ -100,9 +100,10 @@ button { font: inherit; }
 .page[data-page="2"].chapter-handoff::after, .page[data-page="3"].chapter-handoff::after, .page[data-page="8"].chapter-handoff::after, .page[data-page="13"].chapter-handoff::after, .page[data-page="18"].chapter-handoff::after, .page[data-page="23"].chapter-handoff::after { height: 120vh; transition: height 0s; }
 .page[data-page="2"].chapter-complete::after { height: 0; transition: height 0s; }
 /* A project cover collapses its reserve only when the visitor scrolls after
-   the reveal; the short transition lets the following content page glide in
-   with the scroll instead of popping into view at completion. */
-.page[data-page="3"].chapter-complete::after, .page[data-page="8"].chapter-complete::after, .page[data-page="13"].chapter-complete::after, .page[data-page="18"].chapter-complete::after, .page[data-page="23"].chapter-complete::after { height: 0; transition: height 2s cubic-bezier(.65, 0, .35, 1); }
+   the reveal; collapsing at the release wheel keeps the cover in place and
+   lets the following content page follow the scroll 1:1 instead of the cover
+   being pushed up by a separate animation. */
+.page[data-page="3"].chapter-complete::after, .page[data-page="8"].chapter-complete::after, .page[data-page="13"].chapter-complete::after, .page[data-page="18"].chapter-complete::after, .page[data-page="23"].chapter-complete::after { height: 0; transition: height 0s; }
 /* Let the cover's own empty lower reserve contract in normal flow. The body
    never receives an upward transform, so it cannot pass over the Figma cover
    before the cover interaction has completed. */

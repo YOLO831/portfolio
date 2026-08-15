@@ -835,6 +835,54 @@ if (!reduceMotion && !usePinnedReveal) {
   const handoffTimers = new WeakMap();
   const handoffRuns = new WeakMap();
   const returnTimers = new WeakMap();
+  // Physical scroll lock: while an unfinished staged page sits at the reading
+  // centre, the document scroller itself is locked. Wheel preventDefault is
+  // the primary gate; this second gate stops input the browser handles at the
+  // compositor level (fast wheel bursts, trackpad momentum, app webviews)
+  // before the page listener ever runs. Upward input releases it so leaving
+  // the cover stays possible.
+  const scrollLockTarget = document.scrollingElement || document.documentElement;
+  let scrollLockActive = false;
+  let lockPage = null;
+  const applyScrollLock = () => {
+    if (!scrollLockActive) {
+      scrollLockActive = true;
+      scrollLockTarget.style.overflow = 'hidden';
+    }
+  };
+  const releaseScrollLock = () => {
+    if (scrollLockActive) {
+      scrollLockActive = false;
+      scrollLockTarget.style.overflow = '';
+    }
+  };
+  const syncScrollLock = (lockStates, direction) => {
+    // Release when the held page completed or its frame clearly left the
+    // reading zone, so a settling frame can never keep the lock stuck.
+    if (lockPage) {
+      const held = lockStates.find((state) => state.lock.page === lockPage);
+      if (!held || !held.isUnfinished || Math.abs(held.frameOffset) > 120) {
+        lockPage = null;
+        releaseScrollLock();
+      }
+    }
+    const unfinishedAtCentre = lockStates.find((state) => state.isUnfinished && state.isAtReadingCentre);
+    // Upward wheel input on a cover that is still revealing stays free: it
+    // leaves the reading zone instead of being trapped by the lock.
+    if (direction < 0 && unfinishedAtCentre) {
+      lockPage = null;
+      releaseScrollLock();
+      return;
+    }
+    if (unfinishedAtCentre) {
+      lockPage = unfinishedAtCentre.lock.page;
+      applyScrollLock();
+    }
+  };
+  onCoverReady = () => {
+    lockPage = null;
+    releaseScrollLock();
+  };
   const readLockState = (lock) => {
     const frameBounds = lock.composition.getBoundingClientRect();
     const pageBounds = lock.page.getBoundingClientRect();
@@ -921,6 +969,7 @@ if (!reduceMotion && !usePinnedReveal) {
       lock.page.classList.remove('chapter-handoff');
       lock.page.classList.add('chapter-complete');
       lock.composition.dataset.revealReady = 'true';
+      onCoverReady();
       // Collapsing the reserve (layout) and resetting the lift (transform)
       // in one frame cancel out, so the next page never jumps.
       cleanupLift();
@@ -974,6 +1023,9 @@ if (!reduceMotion && !usePinnedReveal) {
     // Read every controlled page synchronously and let actual geometry choose
     // the active lock; no wheel distance or velocity is used here.
     const lockStates = scrollStageLocks.map(readLockState);
+    // Keep the physical lock engaged while an unfinished page is at the
+    // centre. Completion (onCoverReady) or an up-wheel releases it.
+    syncScrollLock(lockStates, direction);
     // During the cover-to-content handoff the reserve height is intentionally
     // contracting, so its frame can briefly leave the centre band. Keep the
     // input consumed by the active handoff state instead of letting a fast
@@ -1014,14 +1066,21 @@ if (!reduceMotion && !usePinnedReveal) {
     // the currently centred chapter has finished its own stages or handoff.
     if (centredState) {
       const { lock, stage, revealReady, isUnfinished, isHandoffRunning } = centredState;
-      // A finished cover keeps its reading reserve until the visitor actually
-      // scrolls, so the following content page is revealed by scrolling rather
-      // than popping in when the cover animation completes. Collapsing the
-      // reserve here starts exactly at the release wheel; the event itself is
-      // not consumed, so the scroll brings the content up.
       const isCover = lock.page.dataset.page !== '2';
+      // A finished cover keeps its reading reserve until the visitor actually
+      // scrolls: the release wheel lifts the following content page up on the
+      // compositor while the cover stays put, then the reserve collapses and
+      // the lift resets in one frame. This reveals the content by scrolling
+      // without ever pushing the cover up itself.
       if (direction > 0 && !isUnfinished && !lock.page.classList.contains('chapter-complete') && isCover) {
-        lock.page.classList.add('chapter-complete');
+        consumeWheel(event);
+        beginCoverHandoff(lock);
+        return;
+      }
+      // The handoff consumes input while the lift is running so the page
+      // cannot scroll under the animating content.
+      if (isHandoffRunning) {
+        consumeWheel(event);
         return;
       }
       // Covers never consume upward input while revealing: the page scrolls
@@ -1043,8 +1102,9 @@ if (!reduceMotion && !usePinnedReveal) {
 
   }, { capture: true, passive: false });
 
-  // A cover left mid-reveal (scrolled back up past it) resets to stage 0 so
-  // the next arrival replays its interaction animation cleanly.
+  // Re-sync the physical lock from live geometry, and reset a cover left
+  // mid-reveal (scrolled back up past it) to stage 0 so the next arrival
+  // replays its interaction animation cleanly.
   let scrollSyncQueued = false;
   window.addEventListener('scroll', () => {
     if (scrollSyncQueued) return;
@@ -1052,6 +1112,7 @@ if (!reduceMotion && !usePinnedReveal) {
     requestAnimationFrame(() => {
       scrollSyncQueued = false;
       const states = scrollStageLocks.map(readLockState);
+      syncScrollLock(states, 0);
       for (const state of states) {
         if (state.lock.page.dataset.page === '2') continue;
         const currentStage = Number(state.lock.composition.dataset.revealStage || 0);
