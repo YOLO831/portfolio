@@ -485,7 +485,7 @@ button { font: inherit; }
 .figma-cover.cover-copy-revealed .cover-name { transition-delay: .96s; }
 .figma-cover.cover-copy-revealed .cover-line-bottom { transition-delay: 1.08s; }
 .figma-cover.cover-copy-revealed .cover-categories { transition-delay: 1.2s; }
-.figma-cover.cover-copy-revealed .cover-mark-large { transition-delay: 1.32s; }
+.figma-cover.cover-copy-revealed .cover-mark-large { opacity: 1; transform: translate(-50%, -50%); transition-delay: 1.32s; }
 .cover-title { font: 100 clamp(12px, .93vw, 16px)/1 'PingFang SC', 'Microsoft YaHei', sans-serif; left: 78.45%; letter-spacing: .3125em; text-transform: uppercase; top: 17.25%; white-space: nowrap; }
 .cover-year { font: 200 italic clamp(14px, 1.16vw, 20px)/1 'Roboto Mono', 'DM Mono', monospace; letter-spacing: .25em; right: 6.55%; text-shadow: 0 1px 8px rgba(0, 0, 0, .8); }
 .cover-year-start { --base-transform: none; top: 57.2%; }
@@ -500,7 +500,7 @@ button { font: inherit; }
 .cover-categories i { font-style: normal; font-weight: 100; margin: 0 .36em; }
 .cover-word { font: 600 clamp(72px, 7.42vw, 128px)/.8 'PingFang SC', 'Microsoft YaHei', sans-serif; left: 5.8%; letter-spacing: .04em; top: 16%; text-transform: uppercase; white-space: nowrap; }
 .cover-mark { height: auto; width: auto; }
-.cover-mark-large { --base-transform: none; left: 47.5%; top: 23%; width: 1.51%; }
+.cover-mark-large { left: 92.9%; opacity: 0; position: absolute; top: 49.75%; transform: translate(-50%, calc(-50% + 34px)); transition: opacity 1.2s ease-in-out, transform 1.5s cubic-bezier(.22, 1, .36, 1); width: 0.203em; }
 .cover-mark-small { display: none; }
 .figma-cover .particle-zone { height: 100%; top: 0; z-index: 1; }
 
@@ -521,7 +521,7 @@ button { font: inherit; }
 .figma-end.end-copy-revealed .end-line-bottom { transition-delay: 1.18s; }
 .figma-end.end-copy-revealed .end-categories { transition-delay: 1.3s; }
 .figma-end.end-copy-revealed .end-mark-small { transition-delay: 1.42s; }
-.figma-end.end-copy-revealed .end-mark-large { transition-delay: 1.54s; }
+.figma-end.end-copy-revealed .end-mark-large { opacity: 1; transform: translate(-50%, -50%); transition-delay: 1.54s; }
 .end-thank, .end-you { font: 600 7.424cqw/.71 'PingFang SC', 'Microsoft YaHei', sans-serif; letter-spacing: .29cqw; white-space: nowrap; }
 .end-thank { left: 6.206%; top: 17.406%; }
 .end-you { left: 30.162%; top: 34.319%; letter-spacing: .35cqw; }
@@ -537,7 +537,7 @@ button { font: inherit; }
 .end-categories i { font-style: normal; font-weight: 100; margin: 0 .36em; }
 .end-mark { height: auto; width: auto; }
 .end-mark-small { left: 18.2%; top: 25%; width: 1.276%; }
-.end-mark-large { left: 37.48%; top: 39.4%; width: 1.914%; }
+.end-mark-large { left: 47.93%; opacity: 0; position: absolute; top: 49.67%; transform: translate(-50%, calc(-50% + 34px)); transition: opacity 1.2s ease-in-out, transform 1.5s cubic-bezier(.22, 1, .36, 1); width: 0.258em; }
 .figma-end .particle-zone { height: 100%; top: 0; z-index: 1; }
 .page[data-page="1"] .particle-zone {
   background: radial-gradient(ellipse at 52% 100%, rgba(195,201,202,.25), transparent 66%);

@@ -161,8 +161,7 @@ function createFigmaCover() {
       <img class="cover-layer cover-line cover-line-bottom" src="./public/figma/page-01/line-bottom.svg" alt="" />
       <div class="cover-layer cover-name">JIN TAIZHEN</div>
       <div class="cover-layer cover-categories"><strong>INTERACTION DESIGN</strong><i>/</i><strong>UX DESIGN</strong><i>/</i><strong>INDUSTRIAL DESIGN</strong></div>
-      <div class="cover-layer cover-word">portfolio</div>
-      <img class="cover-layer cover-mark cover-mark-large" src="./public/figma/page-01/mark-large.svg" alt="" />
+      <div class="cover-layer cover-word">portfolio<img class="cover-mark cover-mark-large" src="./public/figma/page-01/mark-large.svg" alt="" /></div>
       <img class="cover-layer cover-mark cover-mark-small" src="./public/figma/page-01/mark-small.svg" alt="" />
       ${createParticleZone(1)}
       ${createCursorParticleZone(1)}
@@ -179,14 +178,13 @@ function createFigmaEnd() {
     <section class="figma-end" aria-label="作品集结束页" data-figma-frame-id="270:2112">
       <img class="end-background" src="${root}/270-2113-image-2157.png" alt="" data-figma-node-id="270:2113" />
       <div class="end-layer end-thank" data-figma-node-id="270:2114">THANK</div>
-      <div class="end-layer end-you" data-figma-node-id="270:2115">YOU</div>
+      <div class="end-layer end-you" data-figma-node-id="270:2115">YOU<img class="end-mark end-mark-large" src="${root}/270-2122-vector-248.svg" alt="" data-figma-node-id="270:2122" /></div>
       <div class="end-layer end-year end-year-start" data-figma-node-id="270:2116">2023</div>
       <div class="end-layer end-name" data-figma-node-id="270:2117">JIN TAIZHEN</div>
       <div class="end-layer end-categories" data-figma-node-id="270:2118"><strong>INTERACTION DESIGN</strong><i>/</i><strong>UX DESIGN</strong><i>/</i><strong>INDUSTRIAL DESIGN</strong></div>
       <img class="end-layer end-line end-line-top" src="${root}/270-2119-vector-3211.svg" alt="" data-figma-node-id="270:2119" />
       <img class="end-layer end-line end-line-bottom" src="${root}/270-2120-vector-3212.svg" alt="" data-figma-node-id="270:2120" />
       <div class="end-layer end-year end-year-end" data-figma-node-id="270:2121">2026</div>
-      <img class="end-layer end-mark end-mark-large" src="${root}/270-2122-vector-248.svg" alt="" data-figma-node-id="270:2122" />
       <img class="end-layer end-mark end-mark-small" src="${root}/270-2123-vector-3213.svg" alt="" data-figma-node-id="270:2123" />
       <div class="end-layer end-label" data-figma-node-id="270:2124">END</div>
       ${createParticleZone(28)}
@@ -223,7 +221,23 @@ function createFigmaDirectoryModules2x() {
     ${createParticleZone(2)}
     ${createCursorParticleZone(2)}
     ${image(`${root}/probe-2239.png`,0,0,239,327,'directory-2x-left directory-2x-photo')}
-    ${modules.map(([file,x,y,w,h,group]) => image(`${root}/${file}`,x,y,w,h,`directory-2x-module ${group}`)).join('')}
+    ${modules.map(([file,x,y,w,h,group]) => image(`${root}/${file}`,x,y,w,h,`directory-2x-module ${group}${file === 'research-module-2x.png' ? ' directory-2x-research-base' : ''}`)).join('')}
+    <div class="directory-publications-author-patch" aria-hidden="true"><img src="${root}/native/270-2139.png" alt="" /></div>
+    <img class="directory-publications-author-updated directory-2x-left directory-2x-research" src="${root}/user/270-2152-updated.png" alt="" />
+    <div class="directory-publications-update" aria-label="Publications">
+      <div class="directory-publications-heading">Publications</div>
+      <div class="directory-publications-title">《基于小空间场景用户分析的空气调节器设计》</div>
+      <div class="directory-publications-author">-第一作者，发表于《上海轻工业》，2026.07</div>
+      <div class="directory-publications-title directory-publications-title-second">《探析多模态交互设计在人工智能时代的演进路径与核心议题》</div>
+      <div class="directory-publications-author directory-publications-author-second">-第一作者，发表于《重庆科技报》，2025.12</div>
+    </div>
+    <div class="directory-publications-corrected directory-2x-left" aria-label="Publications">
+      <div class="directory-publications-heading">Publications</div>
+      <div class="directory-publications-title">\u300a\u57fa\u4e8e\u5c0f\u7a7a\u95f4\u573a\u666f\u7528\u6237\u5206\u6790\u7684\u7a7a\u6c14\u8c03\u8282\u5668\u8bbe\u8ba1\u300b</div>
+      <div class="directory-publications-author">-\u7b2c\u4e00\u4f5c\u8005\uff0c\u53d1\u8868\u4e8e\u300a\u4e0a\u6d77\u8f7b\u5de5\u4e1a\u300b\uff0c2026.07</div>
+      <div class="directory-publications-title directory-publications-title-second">\u300a\u63a2\u6790\u591a\u6a21\u6001\u4ea4\u4e92\u8bbe\u8ba1\u5728\u4eba\u5de5\u667a\u80fd\u65f6\u4ee3\u7684\u6f14\u8fdb\u8def\u5f84\u4e0e\u6838\u5fc3\u8bae\u9898\u300b</div>
+      <div class="directory-publications-author directory-publications-author-second">-\u7b2c\u4e00\u4f5c\u8005\uff0c\u53d1\u8868\u4e8e\u300a\u91cd\u5e86\u79d1\u6280\u62a5\u300b\uff0c2025.12</div>
+    </div>
     ${rightText.map(([id,x,y,w,h]) => {
       const file = ['2299','2300','2301','2302','2303'].includes(id)
         ? `right-title-2x-${id}.png`
@@ -397,20 +411,11 @@ if (coverPage && bridgeDirectoryPage && !reduceMotion) {
     }
     // Close the cover's flex-centre whitespace through normal scrolling first.
     // Only then is fixed positioning visually identical to the scroll state.
-    const bridgeRange = Math.max(1, bridgeGap * 1.4);
-    const bridgeProgress = Math.min(1, travelled / bridgeRange);
-    const coverBridgeLift = bridgeGap * bridgeProgress;
-    // One anchor only: while Page 02 is visible, the cover canvas follows its
-    // top edge.  This survives the reveal and its handoff without switching
-    // coordinate systems or letting the cover leave first.
-    const keepCoverPinned = Boolean(directoryBounds)
-      && bridgeProgress >= .999
-      && directoryBounds.top < window.innerHeight
-      && directoryBounds.bottom > 0;
-    if (keepCoverPinned && coverCanvas && directoryBounds) {
-      coverPage.style.setProperty('--cover-directory-pinned-top', `${(directoryBounds.top - coverCanvas.getBoundingClientRect().height).toFixed(2)}px`);
-    }
-    coverPage.classList.toggle('cover-directory-pinned', keepCoverPinned);
+    // Keep both pages in normal document flow. The earlier fixed-position
+    // bridge could make the directory jump over the cover at the handoff.
+    // The directory's own sticky reading position remains responsible for
+    // the centre hold; this bridge only controls the particle fade.
+    coverPage.classList.remove('cover-directory-pinned');
     coverPage.style.setProperty('--cover-particle-opacity', '1');
     // Once the directory has begun its own staged reveal, its local particle
     // field is an active interaction surface rather than a distant bridge.
@@ -422,7 +427,7 @@ if (coverPage && bridgeDirectoryPage && !reduceMotion) {
       '--directory-particle-opacity',
       directoryRevealHasStarted ? '1' : opacity.toFixed(3)
     );
-    coverPage.style.setProperty('--cover-bridge-lift', `${coverBridgeLift.toFixed(2)}px`);
+    coverPage.style.setProperty('--cover-bridge-lift', '0px');
   };
   window.addEventListener('scroll', scheduleBridgeUpdate, { passive: true });
   // The directory handoff changes its own layout reserve without necessarily
@@ -440,9 +445,11 @@ let setOtherWorksStage = () => {};
 
 // Keep the reading lock until the longest verified interaction preview has
 // completed, but do not leave a long inert pause after the final reveal.
-const directoryRevealCompleteDelay = 1300;
+// These values are the actual final transition lengths, not an extra pause:
+// unlock exactly when the last staged layer has finished settling.
+const directoryRevealCompleteDelay = 1000;
 const coverPreviewStartDelay = 1000;
-const coverPreviewCompleteDelay = 2300;
+const coverPreviewCompleteDelay = 1650;
 
 function playCoverInteractionPreview(composition, stage) {
   if (stage !== 4 || composition.dataset.interactionPreviewPlayed === 'true') return;
@@ -899,16 +906,6 @@ if (!reduceMotion && !usePinnedReveal) {
   const handoffTimers = new WeakMap();
   const handoffRuns = new WeakMap();
   const returnTimers = new WeakMap();
-  const nearbyLocks = new Set();
-  const lockObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      const lock = scrollStageLocks.find(({ page }) => page === entry.target);
-      if (!lock) return;
-      if (entry.isIntersecting) nearbyLocks.add(lock);
-      else nearbyLocks.delete(lock);
-    });
-  }, { rootMargin: '120% 0px 120%', threshold: 0 });
-  scrollStageLocks.forEach(({ page }) => lockObserver.observe(page));
   const readLockState = (lock) => {
     const frameBounds = lock.composition.getBoundingClientRect();
     const pageBounds = lock.page.getBoundingClientRect();
@@ -921,7 +918,13 @@ if (!reduceMotion && !usePinnedReveal) {
       // `.page-inner` begins with the existing 24px entry transition, so the
       // reading gate tolerates that visual settling distance. It observes the
       // page position only; it never moves the document.
-      isAtReadingCentre: Math.abs(frameOffset) <= 28,
+      // A fast wheel step can cross the exact centre before the next event
+      // is observed. Treat the nearby reading band as the lock gate so the
+      // unfinished cover cannot leak through on that step.
+      // Keep the stop close to the actual reading centre. The handoff-state
+      // guard below handles fast input during the transition, so this band
+      // does not need to be widened into an early stop.
+      isAtReadingCentre: Math.abs(frameOffset) <= 48,
       isActive: pageBounds.top < window.innerHeight && pageBounds.bottom > 0,
       stage,
       revealReady,
@@ -944,7 +947,7 @@ if (!reduceMotion && !usePinnedReveal) {
     window.setTimeout(() => { wheelLock.locked = false; }, 220);
   };
   const beginCoverHandoff = (lock) => {
-    const handoffDuration = lock.page.dataset.page === '2' ? 1500 : 1900;
+    const handoffDuration = lock.page.dataset.page === '2' ? 900 : 900;
     handoffRuns.get(lock.page)?.cancel();
     lock.composition.dataset.revealReady = 'false';
     lock.page.classList.remove('chapter-ready', 'chapter-complete');
@@ -1002,21 +1005,29 @@ if (!reduceMotion && !usePinnedReveal) {
     const direction = Math.sign(wheelDistance);
     if (!direction) return;
 
-    const candidateLocks = nearbyLocks.size
-      ? scrollStageLocks.filter((lock) => nearbyLocks.has(lock))
-      : scrollStageLocks;
-    const lockStates = candidateLocks.map(readLockState);
-    const centredState = lockStates.find(({ isActive, isAtReadingCentre }) => isActive && isAtReadingCentre);
+    // IntersectionObserver updates asynchronously, so its nearby set can
+    // briefly omit the page that a fast gesture has just brought to centre.
+    // Read every controlled page synchronously and let actual geometry choose
+    // the active lock; no wheel distance or velocity is used here.
+    const lockStates = scrollStageLocks.map(readLockState);
+    // During the cover-to-content handoff the reserve height is intentionally
+    // contracting, so its frame can briefly leave the centre band. Keep the
+    // input consumed by the active handoff state instead of letting a fast
+    // wheel step leak through to the following page.
+    const handoffState = lockStates.find(({ isHandoffRunning }) => isHandoffRunning);
+    if (handoffState) {
+      consumeWheel(event);
+      return;
+    }
+    const centredState = lockStates
+      .filter(({ isActive, isAtReadingCentre }) => isActive && isAtReadingCentre)
+      .sort((a, b) => Math.abs(a.frameOffset) - Math.abs(b.frameOffset))[0];
 
     // The page already at the reading position always wins over a later cover.
     // This prevents a large wheel gesture from starting a later chapter before
     // the currently centred chapter has finished its own stages or handoff.
     if (centredState) {
       const { lock, stage, revealReady, isUnfinished, isHandoffRunning } = centredState;
-      if (isHandoffRunning) {
-        consumeWheel(event);
-        return;
-      }
       if (direction > 0 && stage === lock.total && revealReady && lock.page.classList.contains('chapter-ready')) {
         consumeWheel(event);
         beginCoverHandoff(lock);

@@ -161,8 +161,7 @@ function createFigmaCover() {
       <img class="cover-layer cover-line cover-line-bottom" src="./public/figma/page-01/line-bottom.svg" alt="" />
       <div class="cover-layer cover-name">JIN TAIZHEN</div>
       <div class="cover-layer cover-categories"><strong>INTERACTION DESIGN</strong><i>/</i><strong>UX DESIGN</strong><i>/</i><strong>INDUSTRIAL DESIGN</strong></div>
-      <div class="cover-layer cover-word">portfolio</div>
-      <img class="cover-layer cover-mark cover-mark-large" src="./public/figma/page-01/mark-large.svg" alt="" />
+      <div class="cover-layer cover-word">portfolio<img class="cover-mark cover-mark-large" src="./public/figma/page-01/mark-large.svg" alt="" /></div>
       <img class="cover-layer cover-mark cover-mark-small" src="./public/figma/page-01/mark-small.svg" alt="" />
       ${createParticleZone(1)}
       ${createCursorParticleZone(1)}
@@ -179,14 +178,13 @@ function createFigmaEnd() {
     <section class="figma-end" aria-label="作品集结束页" data-figma-frame-id="270:2112">
       <img class="end-background" src="${root}/270-2113-image-2157.png" alt="" data-figma-node-id="270:2113" />
       <div class="end-layer end-thank" data-figma-node-id="270:2114">THANK</div>
-      <div class="end-layer end-you" data-figma-node-id="270:2115">YOU</div>
+      <div class="end-layer end-you" data-figma-node-id="270:2115">YOU<img class="end-mark end-mark-large" src="${root}/270-2122-vector-248.svg" alt="" data-figma-node-id="270:2122" /></div>
       <div class="end-layer end-year end-year-start" data-figma-node-id="270:2116">2023</div>
       <div class="end-layer end-name" data-figma-node-id="270:2117">JIN TAIZHEN</div>
       <div class="end-layer end-categories" data-figma-node-id="270:2118"><strong>INTERACTION DESIGN</strong><i>/</i><strong>UX DESIGN</strong><i>/</i><strong>INDUSTRIAL DESIGN</strong></div>
       <img class="end-layer end-line end-line-top" src="${root}/270-2119-vector-3211.svg" alt="" data-figma-node-id="270:2119" />
       <img class="end-layer end-line end-line-bottom" src="${root}/270-2120-vector-3212.svg" alt="" data-figma-node-id="270:2120" />
       <div class="end-layer end-year end-year-end" data-figma-node-id="270:2121">2026</div>
-      <img class="end-layer end-mark end-mark-large" src="${root}/270-2122-vector-248.svg" alt="" data-figma-node-id="270:2122" />
       <img class="end-layer end-mark end-mark-small" src="${root}/270-2123-vector-3213.svg" alt="" data-figma-node-id="270:2123" />
       <div class="end-layer end-label" data-figma-node-id="270:2124">END</div>
       ${createParticleZone(28)}
