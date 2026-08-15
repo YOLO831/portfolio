@@ -84,6 +84,10 @@ button { font: inherit; }
    The invisible space is appended only below it, so native sticky can retain
    the canvas at that same centre while its original layers finish revealing. */
 .page[data-page="2"] .page-inner, .page[data-page="3"] .page-inner, .page[data-page="8"] .page-inner, .page[data-page="13"] .page-inner, .page[data-page="18"] .page-inner, .page[data-page="23"] .page-inner { margin-top: calc(50vh - 17.6628vw); position: sticky; top: calc(50vh - 17.6628vw); width: 100%; }
+/* Project covers must lock exactly at the reading centre. The generic
+   page-entry translate (24px -> 0) would keep a freshly arrived cover a
+   few pixels below the middle until it settles, so the covers skip it. */
+.page[data-page="3"] .page-inner, .page[data-page="8"] .page-inner, .page[data-page="13"] .page-inner, .page[data-page="18"] .page-inner, .page[data-page="23"] .page-inner { transform: none; }
 .page[data-page="2"]::after, .page[data-page="3"]::after, .page[data-page="8"]::after, .page[data-page="13"]::after, .page[data-page="18"]::after, .page[data-page="23"]::after { content: ''; display: block; height: 120vh; transition: height 1.5s cubic-bezier(.32, 0, .2, 1); }
 /* After the user deliberately releases a completed section, remove only its
    sticky reserve so the following Figma page can follow directly. */

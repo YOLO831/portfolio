@@ -825,30 +825,32 @@ if (!reduceMotion && !usePinnedReveal) {
   const handoffTimers = new WeakMap();
   const handoffRuns = new WeakMap();
   const returnTimers = new WeakMap();
-  // A fast momentum step can cross the reading centre between wheel events,
-  // leaving an unfinished cover beyond the sticky range and outside the
-  // centre band. Once its frame has reached or passed the reading centre,
-  // keep consuming input until it completes or the visitor returns above it.
-  const readingEntered = new WeakMap();
   const readLockState = (lock) => {
     const frameBounds = lock.composition.getBoundingClientRect();
     const pageBounds = lock.page.getBoundingClientRect();
-    const frameOffset = frameBounds.top + frameBounds.height / 2 - window.innerHeight / 2;
+    // The generic page-entry transform (translateY 24px -> 0) shifts the
+    // frame visually while it settles. Subtract it so the reading gate sees
+    // the true layout centre and a cover locks exactly at the middle.
+    const inner = lock.page.querySelector(':scope > .page-inner');
+    const innerTransform = inner ? getComputedStyle(inner).transform : 'none';
+    let entryShift = 0;
+    if (innerTransform && innerTransform !== 'none') {
+      if (innerTransform.startsWith('matrix3d')) {
+        entryShift = Number.parseFloat(innerTransform.slice(8, -1).split(',')[13] || '0') || 0;
+      } else {
+        entryShift = Number.parseFloat(innerTransform.slice(7, -1).split(',')[5] || '0') || 0;
+      }
+    }
+    const frameOffset = frameBounds.top + frameBounds.height / 2 - entryShift - window.innerHeight / 2;
     const stage = Number(lock.composition.dataset.revealStage || 0);
     const revealReady = lock.composition.dataset.revealReady === 'true';
     return {
       lock,
       frameOffset,
-      // `.page-inner` begins with the existing 24px entry transition, so the
-      // reading gate tolerates that visual settling distance. It observes the
-      // page position only; it never moves the document.
-      // A fast wheel step can cross the exact centre before the next event
-      // is observed. Treat the nearby reading band as the lock gate so the
-      // unfinished cover cannot leak through on that step.
-      // Keep the stop close to the actual reading centre. The handoff-state
-      // guard below handles fast input during the transition, so this band
-      // does not need to be widened into an early stop.
-      isAtReadingCentre: Math.abs(frameOffset) <= 48,
+      // The native sticky pin holds the frame at the exact reading centre;
+      // only that pinned position consumes input, so the cover stops at the
+      // middle rather than somewhere in a wide tolerance band.
+      isAtReadingCentre: Math.abs(frameOffset) <= 10,
       isActive: pageBounds.top < window.innerHeight && pageBounds.bottom > 0,
       stage,
       revealReady,
@@ -981,7 +983,7 @@ if (!reduceMotion && !usePinnedReveal) {
     const stickyTop = window.innerHeight / 2 - window.innerWidth * 0.176628;
     const overshootCover = lockStates
       .filter((state) => {
-        if (!state.isUnfinished || state.frameOffset <= 48 || wheelDistance <= 0) return false;
+        if (!state.isUnfinished || state.frameOffset <= 10 || wheelDistance <= 0) return false;
         const frameBounds = state.lock.composition.getBoundingClientRect();
         const pageHeight = state.lock.page.getBoundingClientRect().height;
         const pinOffset = stickyTop + frameBounds.height / 2 - window.innerHeight / 2;
@@ -994,7 +996,7 @@ if (!reduceMotion && !usePinnedReveal) {
       return;
     }
     const centredState = lockStates
-      .filter((state) => (state.isActive && state.isAtReadingCentre) || (state.isUnfinished && readingEntered.get(state.lock.page) === true && Math.abs(state.frameOffset) <= window.innerHeight))
+      .filter((state) => state.isActive && state.isAtReadingCentre)
       .sort((a, b) => Math.abs(a.frameOffset) - Math.abs(b.frameOffset))[0];
 
     // The page already at the reading position always wins over a later cover.
@@ -1015,22 +1017,6 @@ if (!reduceMotion && !usePinnedReveal) {
     }
 
   }, { capture: true, passive: false });
-
-  const updateReadingLatch = () => {
-    for (const lock of scrollStageLocks) {
-      const state = readLockState(lock);
-      if (state.isUnfinished && state.frameOffset <= 48) {
-        readingEntered.set(lock.page, true);
-      } else if (!state.isUnfinished || state.frameOffset > window.innerHeight) {
-        // Stay latched once the cover has reached the reading centre. Only a
-        // completed cover or one still a full viewport below (visitor scrolled
-        // well above it) releases the lock; small async position jitter must
-        // never clear it while the cover is at the middle.
-        readingEntered.set(lock.page, false);
-      }
-    }
-  };
-  window.addEventListener('scroll', updateReadingLatch, { passive: true });
 
 }
 

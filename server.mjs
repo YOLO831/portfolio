@@ -22,7 +22,10 @@ createServer(async (request, response) => {
     const filePath = normalize(join(root, relativePath));
     if (!filePath.startsWith(normalize(root))) throw new Error('Forbidden');
     const content = await readFile(filePath);
-    response.writeHead(200, { 'Content-Type': mime[extname(filePath)] || 'application/octet-stream' });
+    response.writeHead(200, {
+      'Content-Type': mime[extname(filePath)] || 'application/octet-stream',
+      'Cache-Control': 'no-store',
+    });
     response.end(content);
   } catch {
     response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
