@@ -102,7 +102,7 @@ button { font: inherit; }
 /* A project cover collapses its reserve only when the visitor scrolls after
    the reveal; the short transition lets the following content page glide in
    with the scroll instead of popping into view at completion. */
-.page[data-page="3"].chapter-complete::after, .page[data-page="8"].chapter-complete::after, .page[data-page="13"].chapter-complete::after, .page[data-page="18"].chapter-complete::after, .page[data-page="23"].chapter-complete::after { height: 0; transition: height .8s cubic-bezier(.32, 0, .2, 1); }
+.page[data-page="3"].chapter-complete::after, .page[data-page="8"].chapter-complete::after, .page[data-page="13"].chapter-complete::after, .page[data-page="18"].chapter-complete::after, .page[data-page="23"].chapter-complete::after { height: 0; transition: height 2s cubic-bezier(.65, 0, .35, 1); }
 /* Let the cover's own empty lower reserve contract in normal flow. The body
    never receives an upward transform, so it cannot pass over the Figma cover
    before the cover interaction has completed. */
